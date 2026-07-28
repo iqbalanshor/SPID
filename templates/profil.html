@@ -1,0 +1,166 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Kelola Profil - Portal SPID{% endblock %}
+
+{% block content %}
+<div class="form-pengaduan-container">
+
+    <!-- Header info -->
+    <div class="page-header-info">
+        <h2 class="page-title-main">Kelola Profil</h2>
+        <p class="page-subtitle-main">Perbarui data profil pribadi dan foto profil Anda agar selalu aktual.</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="form-card card">
+        <form method="POST" enctype="multipart/form-data" class="app-form">
+            {% csrf_token %}
+
+            <!-- Username (Read-Only) -->
+            <div class="form-group">
+                <label class="form-label">Username</label>
+                <p class="field-help-text">Username unik Anda tidak dapat diubah.</p>
+                <div class="input-with-icon">
+                    <i data-lucide="user" class="input-icon-left"></i>
+                    <input type="text" class="form-control-input" value="{{ request.user.username }}" readonly disabled style="background-color: var(--bg-light); cursor: not-allowed; opacity: 0.8;">
+                </div>
+            </div>
+
+            <!-- Nama Lengkap -->
+            <div class="form-group">
+                <label for="id_nama_lengkap" class="form-label">Nama Lengkap <span class="required">*</span></label>
+                <p class="field-help-text">Nama lengkap sesuai kartu identitas resmi Anda.</p>
+                <div class="input-with-icon">
+                    <i data-lucide="info" class="input-icon-left"></i>
+                    {{ form.nama_lengkap }}
+                </div>
+                {% if form.nama_lengkap.errors %}
+                    <span class="field-error-text">{{ form.nama_lengkap.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Email -->
+            <div class="form-group">
+                <label for="id_email" class="form-label">Alamat Email <span class="required">*</span></label>
+                <p class="field-help-text">Alamat email aktif untuk menerima notifikasi dari sistem.</p>
+                <div class="input-with-icon">
+                    <i data-lucide="mail" class="input-icon-left"></i>
+                    {{ form.email }}
+                </div>
+                {% if form.email.errors %}
+                    <span class="field-error-text">{{ form.email.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Nomor HP -->
+            <div class="form-group">
+                <label for="id_nomor_hp" class="form-label">Nomor WhatsApp / HP <span class="required">*</span></label>
+                <p class="field-help-text">Nomor aktif untuk kemudahan koordinasi tindak lanjut.</p>
+                <div class="input-with-icon">
+                    <i data-lucide="phone" class="input-icon-left"></i>
+                    {{ form.nomor_hp }}
+                </div>
+                {% if form.nomor_hp.errors %}
+                    <span class="field-error-text">{{ form.nomor_hp.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Foto Profil -->
+            <div class="form-group">
+                <label class="form-label">Foto Profil</label>
+                <p class="field-help-text">Unggah foto profil Anda (Format: JPG/PNG, Maks. 2MB).</p>
+                
+                <!-- Premium Profile Image Upload Area -->
+                <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('id_foto_profil').click()" style="padding: 24px;">
+                    <div class="dropzone-content {% if request.user.foto_profil %}hide{% endif %}" id="dropzone-default">
+                        <i data-lucide="camera" class="upload-icon" style="width: 38px; height: 38px;"></i>
+                        <p class="upload-text">Klik atau seret foto profil baru ke sini</p>
+                        <span class="upload-button-mock">Pilih Foto</span>
+                    </div>
+                    <div class="dropzone-preview {% if not request.user.foto_profil %}hide{% endif %}" id="dropzone-preview-container">
+                        <div style="display: flex; justify-content: center; margin-bottom: 6px;">
+                            <img src="{% if request.user.foto_profil %}{{ request.user.foto_profil.url }}{% endif %}" alt="Preview Foto Profil" id="img-preview" class="upload-preview-img" style="width: 100px; height: 100px; border-radius: 50%; object-fit: cover; border: 2.5px solid var(--primary-light);">
+                        </div>
+                        <div class="preview-info">
+                            <span class="file-name" id="selected-file-name">{% if request.user.foto_profil %}{{ request.user.foto_profil.name }}{% else %}FotoProfil.png{% endif %}</span>
+                            <span class="change-file-text">Klik untuk mengganti foto</span>
+                        </div>
+                    </div>
+                    <!-- Hidden native file input -->
+                    <div class="hide">
+                        {{ form.foto_profil }}
+                    </div>
+                </div>
+                
+                {% if form.foto_profil.errors %}
+                    <span class="field-error-text">{{ form.foto_profil.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions-row">
+                <button type="submit" class="btn btn-primary btn-submit">
+                    <span>Simpan Perubahan</span>
+                    <i data-lucide="check" class="btn-icon"></i>
+                </button>
+                <a href="{% url 'beranda' %}" class="btn btn-secondary btn-cancel">Batal</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const fileInput = document.getElementById('id_foto_profil');
+    const dropzone = document.getElementById('dropzone');
+    const dropzoneDefault = document.getElementById('dropzone-default');
+    const previewContainer = document.getElementById('dropzone-preview-container');
+    const imgPreview = document.getElementById('img-preview');
+    const fileNameSpan = document.getElementById('selected-file-name');
+
+    // Drag and drop handlers
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    });
+
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+    });
+
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect(e.dataTransfer.files[0]);
+        }
+    });
+
+    // Native file input handler
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+
+    function handleFileSelect(file) {
+        if (file && file.type.startsWith('image/')) {
+            fileNameSpan.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imgPreview.src = e.target.result;
+                dropzoneDefault.classList.add('hide');
+                previewContainer.classList.remove('hide');
+            }
+            reader.readAsDataURL(file);
+        } else if (file) {
+            alert('Silakan pilih file gambar (JPG/PNG).');
+        }
+    }
+</script>
+{% endblock %}

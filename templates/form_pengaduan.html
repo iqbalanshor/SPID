@@ -1,0 +1,773 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Form Pengaduan - Portal SPID{% endblock %}
+
+{% block extra_css %}
+<!-- Leaflet.js CSS -->
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+      integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY=" crossorigin=""/>
+<style>
+    /* Map container */
+    .map-section {
+        margin-top: 16px;
+        display: flex;
+        flex-direction: column;
+        gap: 12px;
+    }
+
+    .map-header {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        flex-wrap: wrap;
+        gap: 10px;
+    }
+
+    .map-label-hint {
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        display: flex;
+        align-items: center;
+        gap: 6px;
+        font-weight: 500;
+    }
+
+    .map-label-hint i {
+        width: 14px;
+        height: 14px;
+        color: var(--primary-light);
+    }
+
+    #complaint-map {
+        height: 320px;
+        width: 100%;
+        border-radius: 12px;
+        border: 1.5px solid var(--border-color);
+        box-shadow: var(--shadow-sm);
+        z-index: 0;
+        transition: border-color 0.2s ease;
+    }
+
+    #complaint-map:focus-within,
+    #complaint-map.map-active {
+        border-color: var(--border-focus);
+    }
+
+    /* Coordinates display badge */
+    .coord-display {
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        background: var(--bg-light);
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        padding: 10px 14px;
+        font-size: 0.82rem;
+        color: var(--text-muted);
+        font-family: monospace;
+        transition: all 0.25s ease;
+    }
+
+    .coord-display.coord-active {
+        border-color: #10b981;
+        background: #ecfdf5;
+        color: #065f46;
+    }
+
+    .coord-dot {
+        width: 8px;
+        height: 8px;
+        border-radius: 50%;
+        background: #d1d5db;
+        flex-shrink: 0;
+        transition: background 0.25s ease;
+    }
+
+    .coord-display.coord-active .coord-dot {
+        background: #10b981;
+        box-shadow: 0 0 0 3px rgba(16,185,129,0.2);
+        animation: pulse-dot 1.5s infinite;
+    }
+
+    @keyframes pulse-dot {
+        0%   { box-shadow: 0 0 0 0 rgba(16,185,129,0.4); }
+        70%  { box-shadow: 0 0 0 6px rgba(16,185,129,0); }
+        100% { box-shadow: 0 0 0 0 rgba(16,185,129,0); }
+    }
+
+    /* Location button */
+    .btn-locate {
+        display: inline-flex;
+        align-items: center;
+        gap: 8px;
+        padding: 9px 18px;
+        border-radius: 8px;
+        font-size: 0.85rem;
+        font-weight: 600;
+        font-family: var(--font-inter);
+        background: linear-gradient(135deg, var(--primary-light) 0%, var(--primary-color) 100%);
+        color: #fff;
+        border: none;
+        cursor: pointer;
+        transition: all 0.25s ease;
+        box-shadow: 0 2px 8px rgba(12,26,103,0.2);
+    }
+
+    .btn-locate:hover {
+        transform: translateY(-1px);
+        box-shadow: 0 4px 14px rgba(12,26,103,0.3);
+    }
+
+    .btn-locate:active {
+        transform: translateY(0);
+    }
+
+    .btn-locate:disabled {
+        opacity: 0.6;
+        cursor: not-allowed;
+        transform: none;
+    }
+
+    .btn-locate .locate-icon {
+        width: 16px;
+        height: 16px;
+    }
+
+    .locating-spinner {
+        width: 14px;
+        height: 14px;
+        border: 2px solid rgba(255,255,255,0.4);
+        border-top-color: #fff;
+        border-radius: 50%;
+        animation: spin 0.7s linear infinite;
+        display: none;
+    }
+
+    @keyframes spin {
+        to { transform: rotate(360deg); }
+    }
+
+    .map-tip {
+        font-size: 0.78rem;
+        color: var(--text-light);
+        display: flex;
+        align-items: flex-start;
+        gap: 5px;
+        line-height: 1.4;
+    }
+
+    .map-tip i {
+        width: 13px;
+        height: 13px;
+        margin-top: 1px;
+        flex-shrink: 0;
+        color: var(--accent-gold);
+    }
+
+    /* Custom Dropdown Styling */
+    .custom-select-container {
+        position: relative;
+        width: 100%;
+        font-family: var(--font-inter);
+    }
+
+    .hidden-select {
+        display: none !important;
+    }
+
+    .custom-select-trigger {
+        display: flex;
+        align-items: center;
+        justify-content: space-between;
+        width: 100%;
+        padding: 12px 16px;
+        font-size: 0.95rem;
+        border-radius: 8px;
+        border: 1px solid var(--border-color);
+        background-color: #fafafa;
+        color: var(--text-dark);
+        cursor: pointer;
+        transition: var(--transition);
+        user-select: none;
+    }
+
+    .custom-select-trigger:hover {
+        border-color: var(--border-focus);
+        background-color: var(--bg-card);
+    }
+
+    .custom-select-container.active .custom-select-trigger {
+        border-color: var(--border-focus);
+        background-color: var(--bg-card);
+        box-shadow: 0 0 0 3px rgba(59, 130, 246, 0.15);
+    }
+
+    .custom-select-trigger-content {
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .custom-select-icon {
+        width: 20px;
+        height: 20px;
+        color: var(--primary-light);
+        flex-shrink: 0;
+    }
+
+    .custom-select-arrow {
+        width: 18px;
+        height: 18px;
+        color: var(--text-muted);
+        transition: transform 0.2s ease;
+    }
+
+    .custom-select-container.active .custom-select-arrow {
+        transform: rotate(180deg);
+    }
+
+    .custom-select-options {
+        position: absolute;
+        top: calc(100% + 6px);
+        left: 0;
+        right: 0;
+        background-color: var(--bg-card);
+        border: 1.5px solid var(--border-color);
+        border-radius: 10px;
+        box-shadow: var(--shadow-lg);
+        z-index: 100;
+        max-height: 350px;
+        overflow-y: auto;
+        opacity: 0;
+        transform: translateY(-10px);
+        pointer-events: none;
+        transition: opacity 0.2s ease, transform 0.2s ease;
+    }
+
+    .custom-select-container.active .custom-select-options {
+        opacity: 1;
+        transform: translateY(0);
+        pointer-events: auto;
+    }
+
+    .custom-option {
+        display: flex;
+        align-items: center;
+        gap: 14px;
+        padding: 12px 16px;
+        cursor: pointer;
+        transition: background-color 0.15s ease;
+        border-bottom: 1px solid var(--border-color);
+    }
+
+    .custom-option:last-child {
+        border-bottom: none;
+    }
+
+    .custom-option:hover {
+        background-color: rgba(12, 26, 103, 0.04);
+    }
+
+    .custom-option.selected {
+        background-color: rgba(12, 26, 103, 0.06);
+    }
+
+    .custom-option-icon {
+        width: 32px;
+        height: 32px;
+        color: var(--primary-color);
+        flex-shrink: 0;
+        background-color: rgba(12, 26, 103, 0.05);
+        padding: 6px;
+        border-radius: 8px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .custom-option-text {
+        display: flex;
+        flex-direction: column;
+        gap: 2px;
+    }
+
+    .custom-option-title {
+        font-size: 0.95rem;
+        font-weight: 600;
+        color: var(--text-dark);
+    }
+
+    .custom-option-desc {
+        font-size: 0.78rem;
+        color: var(--text-muted);
+        line-height: 1.3;
+    }
+</style>
+{% endblock %}
+
+{% block content %}
+<div class="form-pengaduan-container">
+
+    <!-- Header info -->
+    <div class="page-header-info">
+        <h2 class="page-title-main">Form Pengaduan Baru</h2>
+        <p class="page-subtitle-main">Laporkan permasalahan infrastruktur publik di daerah Anda untuk segera ditindaklanjuti.</p>
+    </div>
+
+    <!-- Form Card -->
+    <div class="form-card card">
+        <form method="POST" enctype="multipart/form-data" class="app-form">
+            {% csrf_token %}
+
+            <!-- Kategori Masalah -->
+            <div class="form-group">
+                <label for="id_kategori" class="form-label">Kategori Pengaduan <span class="required">*</span></label>
+                <p class="field-help-text">Pilih bidang infrastruktur yang mengalami kerusakan.</p>
+                <div class="select-wrapper">
+                    {{ form.kategori }}
+                </div>
+                {% if form.kategori.errors %}
+                    <span class="field-error-text">{{ form.kategori.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Lokasi Kejadian -->
+            <div class="form-group">
+                <label for="id_lokasi" class="form-label">Lokasi Detail Kejadian <span class="required">*</span></label>
+                <p class="field-help-text">Tulis alamat lengkap, nama jalan, patokan terdekat, RT/RW, dan kecamatan.</p>
+                <div class="input-with-icon">
+                    <i data-lucide="map-pin" class="input-icon-left"></i>
+                    {{ form.lokasi }}
+                </div>
+                {% if form.lokasi.errors %}
+                    <span class="field-error-text">{{ form.lokasi.errors.0 }}</span>
+                {% endif %}
+                
+            <!-- Deskripsi Laporan -->
+            <div class="form-group">
+                <label for="id_deskripsi" class="form-label">Deskripsi Lengkap Laporan <span class="required">*</span></label>
+                <p class="field-help-text">Jelaskan kondisi kerusakan secara rinci agar mempermudah petugas melakukan verifikasi lapangan.</p>
+                {{ form.deskripsi }}
+                {% if form.deskripsi.errors %}
+                    <span class="field-error-text">{{ form.deskripsi.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Foto Dokumentasi -->
+            <div class="form-group">
+                <label class="form-label">Foto Dokumentasi Kerusakan</label>
+                <p class="field-help-text">Lampirkan foto bukti kondisi fisik kerusakan (Format: JPG/PNG, Maks. 5MB).</p>
+                
+                <!-- Premium Drag & Drop Area -->
+                <div class="upload-dropzone" id="dropzone" onclick="document.getElementById('id_foto').click()">
+                    <div class="dropzone-content" id="dropzone-default">
+                        <i data-lucide="image" class="upload-icon"></i>
+                        <p class="upload-text">Klik atau seret file gambar ke sini untuk mengunggah</p>
+                        <span class="upload-button-mock">Pilih Berkas</span>
+                    </div>
+                    <div class="dropzone-preview hide" id="dropzone-preview-container">
+                        <img src="" alt="Preview Gambar" id="img-preview" class="upload-preview-img">
+                        <div class="preview-info">
+                            <span class="file-name" id="selected-file-name">filename.jpg</span>
+                            <span class="change-file-text">Klik untuk mengganti berkas</span>
+                        </div>
+                    </div>
+                    <!-- Hidden native file input -->
+                    <div class="hide">
+                        {{ form.foto }}
+                    </div>
+                </div>
+                
+                {% if form.foto.errors %}
+                    <span class="field-error-text">{{ form.foto.errors.0 }}</span>
+                {% endif %}
+            </div>
+
+            <!-- Form Actions -->
+            <div class="form-actions-row">
+                <button type="submit" class="btn btn-primary btn-submit">
+                    <span>Kirim Pengaduan</span>
+                    <i data-lucide="send" class="btn-icon"></i>
+                </button>
+                <a href="{% url 'beranda' %}" class="btn btn-secondary btn-cancel">Batal</a>
+            </div>
+
+        </form>
+    </div>
+
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<!-- Leaflet.js Library -->
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+        integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs=" crossorigin=""></script>
+
+<script>
+    // =====================================================================
+    // DRAG & DROP FOTO HANDLER
+    // =====================================================================
+    const fileInput = document.getElementById('id_foto');
+    const dropzone = document.getElementById('dropzone');
+    const dropzoneDefault = document.getElementById('dropzone-default');
+    const previewContainer = document.getElementById('dropzone-preview-container');
+    const imgPreview = document.getElementById('img-preview');
+    const fileNameSpan = document.getElementById('selected-file-name');
+
+    dropzone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        dropzone.classList.add('dragover');
+    });
+    dropzone.addEventListener('dragleave', () => {
+        dropzone.classList.remove('dragover');
+    });
+    dropzone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        dropzone.classList.remove('dragover');
+        if (e.dataTransfer.files.length > 0) {
+            fileInput.files = e.dataTransfer.files;
+            handleFileSelect(e.dataTransfer.files[0]);
+        }
+    });
+    fileInput.addEventListener('change', (e) => {
+        if (e.target.files.length > 0) {
+            handleFileSelect(e.target.files[0]);
+        }
+    });
+    function handleFileSelect(file) {
+        if (file && file.type.startsWith('image/')) {
+            fileNameSpan.textContent = file.name;
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                imgPreview.src = e.target.result;
+                dropzoneDefault.classList.add('hide');
+                previewContainer.classList.remove('hide');
+            }
+            reader.readAsDataURL(file);
+        } else if (file) {
+            alert('Silakan pilih file gambar (JPG/PNG).');
+        }
+    }
+
+    // =====================================================================
+    // LEAFLET MAP – TITIK KOORDINAT INDONESIA
+    // =====================================================================
+    // Default center: Indonesia (Sulawesi tengah region for centering the archipelago)
+    const DEFAULT_LAT  = -2.5489;
+    const DEFAULT_LNG  = 118.0149;
+    const DEFAULT_ZOOM = 5;
+
+    // Initialize map centered on Indonesia
+    const map = L.map('complaint-map', {
+        center: [DEFAULT_LAT, DEFAULT_LNG],
+        zoom: DEFAULT_ZOOM,
+        zoomControl: true,
+    });
+
+    // OpenStreetMap tile layer (free, no API key needed)
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+        maxZoom: 19,
+    }).addTo(map);
+
+    // Custom map marker icon (navy blue matching SPID theme)
+    const markerIcon = L.divIcon({
+        className: '',
+        html: `
+            <div style="
+                width: 32px; height: 42px;
+                position: relative;
+                filter: drop-shadow(0 3px 6px rgba(12,26,103,0.45));
+            ">
+                <svg viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+                    <path d="M16 0C7.16 0 0 7.16 0 16c0 10.49 14.27 25.05 15.11 25.94a1.2 1.2 0 001.78 0C17.73 41.05 32 26.49 32 16 32 7.16 24.84 0 16 0z"
+                          fill="#0c1a67"/>
+                    <circle cx="16" cy="16" r="7" fill="white"/>
+                    <circle cx="16" cy="16" r="4" fill="#1b2a85"/>
+                </svg>
+            </div>
+        `,
+        iconSize: [32, 42],
+        iconAnchor: [16, 42],
+        popupAnchor: [0, -44],
+    });
+
+    let marker = null;
+
+    // Hidden form fields
+    const latInput = document.getElementById('id_latitude');
+    const lngInput = document.getElementById('id_longitude');
+
+    // Coordinate display elements
+    const coordDisplay = document.getElementById('coord-display');
+    const coordDot     = document.getElementById('coord-dot');
+    const coordText    = document.getElementById('coord-text');
+    const mapEl        = document.getElementById('complaint-map');
+
+    /**
+     * Places or moves the draggable marker to the given lat/lng and updates
+     * the hidden form inputs + coordinate display badge.
+     */
+    function setMarker(lat, lng) {
+        const roundedLat = parseFloat(lat.toFixed(6));
+        const roundedLng = parseFloat(lng.toFixed(6));
+
+        if (marker) {
+            marker.setLatLng([roundedLat, roundedLng]);
+        } else {
+            marker = L.marker([roundedLat, roundedLng], {
+                icon: markerIcon,
+                draggable: true,
+            }).addTo(map);
+
+            // Update coordinates when marker is dragged
+            marker.on('dragend', function(e) {
+                const pos = e.target.getLatLng();
+                updateCoords(pos.lat, pos.lng);
+            });
+        }
+
+        updateCoords(roundedLat, roundedLng);
+        map.setView([roundedLat, roundedLng], Math.max(map.getZoom(), 14));
+        mapEl.classList.add('map-active');
+    }
+
+    /**
+     * Updates hidden inputs and the coordinate display badge.
+     */
+    function updateCoords(lat, lng) {
+        latInput.value = lat;
+        lngInput.value = lng;
+
+        coordDisplay.classList.add('coord-active');
+        coordText.textContent = `Lat: ${lat.toFixed(6)}, Lng: ${lng.toFixed(6)}`;
+    }
+
+    // Click on map to place marker
+    map.on('click', function(e) {
+        setMarker(e.latlng.lat, e.latlng.lng);
+    });
+
+    // ── GEOLOCATION BUTTON ──────────────────────────────────────────────
+    const btnGeolocate  = document.getElementById('btn-geolocate');
+    const locateSpinner = document.getElementById('locate-spinner');
+    const locateIcon    = document.getElementById('locate-icon');
+    const locateText    = document.getElementById('locate-text');
+
+    btnGeolocate.addEventListener('click', function() {
+        if (!navigator.geolocation) {
+            alert('Browser Anda tidak mendukung fitur geolokasi.');
+            return;
+        }
+
+        // Show loading state
+        btnGeolocate.disabled = true;
+        locateSpinner.style.display = 'block';
+        locateIcon.style.display    = 'none';
+        locateText.textContent      = 'Mendeteksi lokasi...';
+
+        navigator.geolocation.getCurrentPosition(
+            function(position) {
+                const lat = position.coords.latitude;
+                const lng = position.coords.longitude;
+
+                setMarker(lat, lng);
+
+                // Restore button
+                btnGeolocate.disabled = false;
+                locateSpinner.style.display = 'none';
+                locateIcon.style.display    = '';
+                locateText.textContent      = 'Lokasi Terdeteksi ✓';
+
+                setTimeout(() => { locateText.textContent = 'Dapatkan Lokasi Saya'; }, 3000);
+            },
+            function(err) {
+                btnGeolocate.disabled = false;
+                locateSpinner.style.display = 'none';
+                locateIcon.style.display    = '';
+                locateText.textContent      = 'Dapatkan Lokasi Saya';
+
+                let msg = 'Gagal mendapatkan lokasi.';
+                if (err.code === 1) msg = 'Akses lokasi ditolak. Aktifkan izin lokasi di browser Anda.';
+                if (err.code === 2) msg = 'Lokasi tidak tersedia. Coba lagi sebentar.';
+                if (err.code === 3) msg = 'Waktu habis saat mencari lokasi. Coba lagi.';
+                alert(msg);
+            },
+            { timeout: 10000, enableHighAccuracy: true }
+        );
+    });
+
+    // Re-render icons after Leaflet loads (Lucide needs to re-run)
+    if (typeof lucide !== 'undefined') {
+        lucide.createIcons();
+    }
+</script>
+
+<script>
+    // =====================================================================
+    // CUSTOM SELECT DROPDOWN FOR KATEGORI WITH ICONS & DESCRIPTIONS
+    // =====================================================================
+    const originalSelect = document.getElementById('id_kategori');
+    if (originalSelect) {
+        // Map options to details
+        const categoryDetails = {
+            'Jalan': {
+                icon: 'road',
+                desc: 'Jalan berlubang, retak, amblas, atau aspal terkelupas'
+            },
+            'Jembatan': {
+                icon: 'bridge',
+                desc: 'Keretakan struktur jembatan, tiang penyangga rusak, atau oprit longsor'
+            },
+            'Penerangan': {
+                icon: 'lightbulb',
+                desc: 'Lampu jalan mati, tiang miring, kabel listrik menjuntai'
+            },
+            'Fasilitas': {
+                icon: 'building-2',
+                desc: 'Halte rusak, taman kota rusak, fasilitas disabilitas terganggu'
+            },
+            'Irigasi': {
+                icon: 'droplet',
+                desc: 'Saluran air tersumbat, tanggul jebol, atau sedimentasi parah'
+            },
+            'Lainnya': {
+                icon: 'help-circle',
+                desc: 'Laporan kerusakan infrastruktur lainnya di luar kategori di atas'
+            }
+        };
+
+        // Hide original select
+        originalSelect.classList.add('hidden-select');
+
+        // Create custom select wrapper elements
+        const selectWrapper = originalSelect.parentElement;
+        
+        const customSelectContainer = document.createElement('div');
+        customSelectContainer.className = 'custom-select-container';
+        customSelectContainer.id = 'custom-select-kategori';
+
+        // Trigger (Header)
+        const trigger = document.createElement('div');
+        trigger.className = 'custom-select-trigger';
+
+        const triggerContent = document.createElement('div');
+        triggerContent.className = 'custom-select-trigger-content';
+
+        const triggerIcon = document.createElement('i');
+        triggerIcon.className = 'custom-select-icon';
+        triggerIcon.setAttribute('data-lucide', 'help-circle');
+
+        const triggerLabel = document.createElement('span');
+        triggerLabel.className = 'custom-select-label';
+        triggerLabel.textContent = 'Pilih Kategori';
+
+        triggerContent.appendChild(triggerIcon);
+        triggerContent.appendChild(triggerLabel);
+
+        const arrowIcon = document.createElement('i');
+        arrowIcon.className = 'custom-select-arrow';
+        arrowIcon.setAttribute('data-lucide', 'chevron-down');
+
+        trigger.appendChild(triggerContent);
+        trigger.appendChild(arrowIcon);
+        customSelectContainer.appendChild(trigger);
+
+        // Options dropdown
+        const optionsContainer = document.createElement('div');
+        optionsContainer.className = 'custom-select-options';
+
+        // Populate options
+        Array.from(originalSelect.options).forEach(option => {
+            const val = option.value;
+            const text = option.text;
+            
+            // Skip placeholder if empty
+            if (!val) return;
+
+            const details = categoryDetails[val] || { icon: 'help-circle', desc: '' };
+
+            const optionDiv = document.createElement('div');
+            optionDiv.className = 'custom-option';
+            optionDiv.setAttribute('data-value', val);
+
+            if (option.selected) {
+                optionDiv.classList.add('selected');
+                // update trigger header
+                triggerIcon.setAttribute('data-lucide', details.icon);
+                triggerLabel.textContent = text;
+            }
+
+            // Icon inside option
+            const optIcon = document.createElement('i');
+            optIcon.className = 'custom-option-icon';
+            optIcon.setAttribute('data-lucide', details.icon);
+
+            // Text inside option
+            const optTextDiv = document.createElement('div');
+            optTextDiv.className = 'custom-option-text';
+
+            const optTitle = document.createElement('span');
+            optTitle.className = 'custom-option-title';
+            optTitle.textContent = text;
+
+            const optDesc = document.createElement('span');
+            optDesc.className = 'custom-option-desc';
+            optDesc.textContent = details.desc;
+
+            optTextDiv.appendChild(optTitle);
+            if (details.desc) {
+                optTextDiv.appendChild(optDesc);
+            }
+
+            optionDiv.appendChild(optIcon);
+            optionDiv.appendChild(optTextDiv);
+
+            // Click on option
+            optionDiv.addEventListener('click', function(e) {
+                e.stopPropagation();
+                
+                // remove selected from all options
+                optionsContainer.querySelectorAll('.custom-option').forEach(opt => opt.classList.remove('selected'));
+                optionDiv.classList.add('selected');
+
+                // Update original select value and trigger change event
+                originalSelect.value = val;
+                originalSelect.dispatchEvent(new Event('change'));
+
+                // Update trigger UI
+                triggerIcon.setAttribute('data-lucide', details.icon);
+                triggerLabel.textContent = text;
+                if (typeof lucide !== 'undefined') {
+                    lucide.createIcons();
+                }
+
+                // Close dropdown
+                customSelectContainer.classList.remove('active');
+            });
+
+            optionsContainer.appendChild(optionDiv);
+        });
+
+        customSelectContainer.appendChild(optionsContainer);
+        selectWrapper.appendChild(customSelectContainer);
+
+        // Toggle dropdown
+        trigger.addEventListener('click', function(e) {
+            e.stopPropagation();
+            customSelectContainer.classList.toggle('active');
+        });
+
+        // Close when clicking outside
+        document.addEventListener('click', function(e) {
+            if (!customSelectContainer.contains(e.target)) {
+                customSelectContainer.classList.remove('active');
+            }
+        });
+    }
+
+    // Fix Leaflet tile rendering if the map container was hidden on load
+    setTimeout(() => { map.invalidateSize(); }, 200);
+</script>
+{% endblock %}

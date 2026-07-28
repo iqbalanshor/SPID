@@ -1,0 +1,201 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Manajemen Admin - Admin SPID{% endblock %}
+
+{% block content %}
+<div class="admin-users-container" style="display: flex; flex-direction: column; gap: 30px;">
+
+    <!-- Header Page -->
+    <div>
+        <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--primary-color);">Manajemen Admin & Pengguna</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">Kelola akun petugas administrator dan pantau sesi aktif sistem.</p>
+    </div>
+
+    <!-- Main Grid -->
+    <div style="display: grid; grid-template-columns: 1.2fr 2fr; gap: 30px; align-items: flex-start;">
+        
+        <!-- Left: Add New Admin Form -->
+        <div class="card" style="padding: 28px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="user-plus" style="color: var(--primary-light); width: 20px; height: 20px;"></i>
+                <span>Tambah Admin Baru</span>
+            </h3>
+            
+            <form method="POST" action="{% url 'admin_users' %}" class="app-form" style="display: flex; flex-direction: column; gap: 18px;">
+                {% csrf_token %}
+
+                <!-- Username -->
+                <div class="form-group">
+                    <label class="form-label">Username <span class="required">*</span></label>
+                    <input type="text" name="username" class="form-control-input" placeholder="Pilih username unik" required style="padding: 10px 14px; border-radius: 8px;">
+                </div>
+
+                <!-- Nama Lengkap -->
+                <div class="form-group">
+                    <label class="form-label">Nama Lengkap <span class="required">*</span></label>
+                    <input type="text" name="nama_lengkap" class="form-control-input" placeholder="Masukkan nama lengkap" required style="padding: 10px 14px; border-radius: 8px;">
+                </div>
+
+                <!-- Email -->
+                <div class="form-group">
+                    <label class="form-label">Alamat Email <span class="required">*</span></label>
+                    <input type="email" name="email" class="form-control-input" placeholder="contoh@spid.gov" required style="padding: 10px 14px; border-radius: 8px;">
+                </div>
+
+                <!-- Nomor HP -->
+                <div class="form-group">
+                    <label class="form-label">Nomor HP / WhatsApp <span class="required">*</span></label>
+                    <input type="text" name="nomor_hp" class="form-control-input" placeholder="08xxxxxxxxxx" required style="padding: 10px 14px; border-radius: 8px;">
+                </div>
+
+                <!-- Password -->
+                <div class="form-group">
+                    <label class="form-label">Kata Sandi <span class="required">*</span></label>
+                    <input type="password" name="password" class="form-control-input" placeholder="Pilih kata sandi aman" required style="padding: 10px 14px; border-radius: 8px;">
+                </div>
+
+                <!-- Submit -->
+                <div style="margin-top: 6px;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 600; display: flex; justify-content: center; gap: 8px; background-color: #000; border-color: #000;">
+                        <i data-lucide="check" style="width: 18px; height: 18px;"></i>
+                        <span>Daftarkan Admin</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Right: Users List & Session Monitoring -->
+        <div style="display: flex; flex-direction: column; gap: 30px;">
+            
+            <!-- Users List Card -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 24px 28px; border-bottom: 1px solid var(--border-color); background-color: #fcfcfc;">
+                    <h3 style="font-size: 1.15rem; font-weight: 700;">Daftar Akun Pengguna</h3>
+                </div>
+                
+                <div class="table-responsive" style="max-height: 380px; overflow-y: auto;">
+                    <table class="tracking-table">
+                        <thead>
+                            <tr>
+                                <th>Nama / Username</th>
+                                <th>Kontak Info</th>
+                                <th>Peran</th>
+                                <th>Login Terakhir</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for u in users %}
+                            <tr>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                                        <span style="font-weight: 700; color: var(--text-dark);">{{ u.nama_lengkap }}</span>
+                                        <span style="font-size: 0.78rem; color: var(--text-muted);">@{{ u.username }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    <div style="display: flex; flex-direction: column; gap: 2px; font-size: 0.85rem;">
+                                        <span>{{ u.email }}</span>
+                                        <span style="color: var(--text-muted);">{{ u.nomor_hp }}</span>
+                                    </div>
+                                </td>
+                                <td>
+                                    {% if u.is_superuser %}
+                                        <span style="font-size: 0.72rem; color: #7f1d1d; background-color: #fee2e2; padding: 4px 10px; border-radius: 12px; font-weight: 700; text-transform: uppercase;">Super Admin</span>
+                                    {% elif u.is_staff %}
+                                        <span style="font-size: 0.72rem; color: #1e3a8a; background-color: #dbeafe; padding: 4px 10px; border-radius: 12px; font-weight: 700; text-transform: uppercase;">Admin</span>
+                                    {% else %}
+                                        <span style="font-size: 0.72rem; color: #064e3b; background-color: #d1fae5; padding: 4px 10px; border-radius: 12px; font-weight: 700; text-transform: uppercase;">Warga</span>
+                                    {% endif %}
+                                </td>
+                                <td style="color: var(--text-muted); font-size: 0.85rem;">
+                                    {% if u.last_login %}
+                                        {{ u.last_login|date:"d M Y, H:i" }}
+                                    {% else %}
+                                        Belum pernah login
+                                    {% endif %}
+                                </td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="4" style="text-align: center; padding: 30px; color: var(--text-muted);">Tidak ada akun terdaftar.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Active Sessions Card -->
+            <div class="card" style="padding: 0; overflow: hidden;">
+                <div style="padding: 24px 28px; border-bottom: 1px solid var(--border-color); background-color: #fcfcfc; display: flex; align-items: center; justify-content: space-between;">
+                    <h3 style="font-size: 1.15rem; font-weight: 700; display: flex; align-items: center; gap: 8px;">
+                        <span style="width: 10px; height: 10px; background-color: #10b981; border-radius: 50%; display: inline-block; animation: pulse 2s infinite;"></span>
+                        <span>Sesi Aktif Sistem</span>
+                    </h3>
+                    <span style="font-size: 0.8rem; background-color: #d1fae5; color: #065f46; padding: 2px 10px; border-radius: 12px; font-weight: 700;">{{ active_sessions|length }} Online</span>
+                </div>
+                
+                <div class="table-responsive">
+                    <table class="tracking-table">
+                        <thead>
+                            <tr>
+                                <th>Key Sesi</th>
+                                <th>Pengguna</th>
+                                <th>Kedaluwarsa</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            {% for sess in active_sessions %}
+                            <tr>
+                                <td style="font-family: monospace; font-size: 0.8rem; color: var(--text-muted);">{{ sess.session_key|truncatechars:12 }}...</td>
+                                <td>
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <div style="width: 28px; height: 28px; border-radius: 50%; overflow: hidden; border: 1px solid var(--border-color);">
+                                            {% if sess.user.foto_profil %}
+                                                <img src="{{ sess.user.foto_profil.url }}" alt="User Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% else %}
+                                                <img src="{% static 'images/user_avatar.jpg' %}" alt="Default Profile" style="width: 100%; height: 100%; object-fit: cover;">
+                                            {% endif %}
+                                        </div>
+                                        <div style="display: flex; flex-direction: column;">
+                                            <span style="font-weight: 700; font-size: 0.85rem; color: var(--text-dark);">{{ sess.user.nama_lengkap }}</span>
+                                            <span style="font-size: 0.72rem; color: var(--text-muted);">@{{ sess.user.username }}</span>
+                                        </div>
+                                    </div>
+                                </td>
+                                <td style="color: var(--text-muted); font-size: 0.85rem;">{{ sess.expire_date|date:"d M Y, H:i" }} WIB</td>
+                            </tr>
+                            {% empty %}
+                            <tr>
+                                <td colspan="3" style="text-align: center; padding: 24px; color: var(--text-muted);">Tidak ada sesi aktif terdeteksi.</td>
+                            </tr>
+                            {% endfor %}
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<style>
+    @keyframes pulse {
+        0% {
+            transform: scale(0.9);
+            opacity: 0.8;
+        }
+        50% {
+            transform: scale(1.1);
+            opacity: 1;
+        }
+        100% {
+            transform: scale(0.9);
+            opacity: 0.8;
+        }
+    }
+</style>
+{% endblock %}

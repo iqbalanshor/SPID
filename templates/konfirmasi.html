@@ -1,0 +1,80 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Laporan Terkirim - Portal SPID{% endblock %}
+
+{% block content %}
+<div class="konfirmasi-container">
+    <div class="card konfirmasi-card text-center">
+        <!-- Success Animation Icon -->
+        <div class="success-icon-wrapper">
+            <div class="success-icon-circle animate-scale">
+                <i data-lucide="check" class="success-check-svg animate-checkmark"></i>
+            </div>
+            <div class="success-sparkles">
+                <span class="sparkle s1"></span>
+                <span class="sparkle s2"></span>
+                <span class="sparkle s3"></span>
+                <span class="sparkle s4"></span>
+            </div>
+        </div>
+
+        <h2 class="konfirmasi-title">Laporan Berhasil Dikirim!</h2>
+        <p class="konfirmasi-subtitle">
+            Terima kasih telah berpartisipasi aktif dalam melaporkan kerusakan infrastruktur di daerah Anda. Laporan Anda telah tercatat ke dalam sistem.
+        </p>
+
+        <!-- Ticket Summary Card -->
+        <div class="ticket-summary-box">
+            <div class="ticket-header">
+                <span class="ticket-id-label">Nomor Tiket Pengaduan</span>
+                <h3 class="ticket-id-value">#SPID-{{ pengaduan.id }}</h3>
+            </div>
+            
+            <div class="ticket-details-grid">
+                <div class="ticket-detail-item">
+                    <span class="detail-label">Kategori</span>
+                    <span class="detail-value text-category-{{ pengaduan.kategori }}">
+                        {% if pengaduan.kategori == 'Jalan' %}<i data-lucide="road" class="pill-icon-inline"></i>
+                        {% elif pengaduan.kategori == 'Jembatan' %}<i data-lucide="bridge" class="pill-icon-inline"></i>
+                        {% elif pengaduan.kategori == 'Penerangan' %}<i data-lucide="lightbulb" class="pill-icon-inline"></i>
+                        {% elif pengaduan.kategori == 'Fasilitas' %}<i data-lucide="building-2" class="pill-icon-inline"></i>
+                        {% elif pengaduan.kategori == 'Irigasi' %}<i data-lucide="droplet" class="pill-icon-inline"></i>
+                        {% else %}<i data-lucide="help-circle" class="pill-icon-inline"></i>
+                        {% endif %}
+                        {{ pengaduan.get_kategori_display }}
+                    </span>
+                </div>
+                <div class="ticket-detail-item">
+                    <span class="detail-label">Tanggal Pengiriman</span>
+                    <span class="detail-value">{{ pengaduan.created_at|date:"d F Y, H:i" }} WIB</span>
+                </div>
+                <div class="ticket-detail-item" style="grid-column: span 2;">
+                    <span class="detail-label">Lokasi Kejadian</span>
+                    <span class="detail-value bg-light-card">{{ pengaduan.lokasi }}</span>
+                </div>
+                {% if pengaduan.foto %}
+                <div class="ticket-detail-item" style="grid-column: span 2;">
+                    <span class="detail-label">Foto Dokumentasi</span>
+                    <div class="detail-img-wrapper">
+                        <img src="{{ pengaduan.foto.url }}" alt="Bukti Foto" class="detail-img-preview">
+                    </div>
+                </div>
+                {% endif %}
+            </div>
+        </div>
+
+        <!-- Call to Actions -->
+        <div class="konfirmasi-actions">
+            <a href="{% url 'tracking' %}" class="btn btn-primary">
+                <i data-lucide="search" class="btn-icon-left"></i>
+                <span>Pantau Status Pengaduan</span>
+            </a>
+            <a href="{% url 'form_pengaduan' %}" class="btn btn-secondary">
+                <i data-lucide="plus" class="btn-icon-left"></i>
+                <span>Buat Laporan Lain</span>
+            </a>
+        </div>
+    </div>
+</div>
+{% endblock %}

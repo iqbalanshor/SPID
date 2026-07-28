@@ -1,0 +1,847 @@
+{% extends 'admin_base.html' %} {% load static %} {% block title %}Detail
+Pengaduan #SPID-{{ report.id }} - Admin{% endblock %} {% block extra_css %}
+<!-- Leaflet.js CSS -->
+<link
+  rel="stylesheet"
+  href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"
+  integrity="sha256-p4NxAoJBhIIN+hmNHrzRCf9tD/miZyoHS5obTRR9BMY="
+  crossorigin=""
+/>
+<style>
+  #admin-report-map {
+    height: 260px;
+    width: 100%;
+    border-radius: 10px;
+    border: 1.5px solid var(--border-color);
+    box-shadow: var(--shadow-sm);
+    z-index: 0;
+  }
+  .coord-badge-admin {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    background: #ecfdf5;
+    border: 1.5px solid #6ee7b7;
+    border-radius: 8px;
+    padding: 8px 14px;
+    font-size: 0.8rem;
+    color: #065f46;
+    font-family: monospace;
+    font-weight: 600;
+  }
+  .coord-badge-admin .cdot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #10b981;
+    box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.2);
+    flex-shrink: 0;
+  }
+  .no-coord-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    height: 160px;
+    background: var(--bg-light);
+    border: 1.5px dashed var(--border-color);
+    border-radius: 10px;
+    color: var(--text-light);
+    font-size: 0.85rem;
+  }
+  .step-title.step-active {
+    color: var(--text-dark);
+  }
+  .step-title.step-inactive {
+    color: var(--text-light);
+  }
+  .dot-active {
+    background-color: #10b981;
+    border: 2px solid #10b981;
+  }
+  .dot-inactive {
+    background-color: #fff;
+    border: 2px solid var(--text-light);
+  }
+</style>
+{% endblock %} {% block content %}
+<div
+  class="admin-detail-container"
+  style="display: flex; flex-direction: column; gap: 24px"
+>
+  <!-- Breadcrumb -->
+  <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500">
+    <a href="{% url 'admin_data' %}" style="color: var(--text-muted)"
+      >Data Pengaduan</a
+    >
+    &gt; <span>LPR-2026-{{ report.id|stringformat:"04d" }}</span>
+  </div>
+
+  <!-- Header bar -->
+  <div
+    style="display: flex; justify-content: space-between; align-items: center"
+  >
+    <h2
+      style="font-size: 1.8rem; font-weight: 700; color: var(--primary-color)"
+    >
+      Detail Pengaduan #{{ report.id|stringformat:"04d" }}
+    </h2>
+    <div style="display: flex; gap: 12px"></div>
+  </div>
+
+  <!-- Main Grid (Left column: detail info, Right column: actions & timeline) -->
+  <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 28px">
+    <!-- Left Column: Details -->
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <!-- Reporter Card & Description -->
+      <div
+        class="card"
+        style="padding: 28px; display: flex; flex-direction: column; gap: 20px"
+      >
+        <!-- User Head info -->
+        <div
+          style="
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+          "
+        >
+          <div style="display: flex; gap: 16px; align-items: center">
+            <div
+              style="
+                width: 52px;
+                height: 52px;
+                border-radius: 50%;
+                overflow: hidden;
+                border: 1.5px solid var(--border-color);
+              "
+            >
+              {% if report.user.foto_profil %}
+              <img
+                src="{{ report.user.foto_profil.url }}"
+                alt="Pelapor Avatar"
+                style="width: 100%; height: 100%; object-fit: cover"
+              />
+              {% else %}
+              <img
+                src="{% static 'images/user_avatar.jpg' %}"
+                alt="Pelapor Avatar"
+                style="width: 100%; height: 100%; object-fit: cover"
+              />
+              {% endif %}
+            </div>
+            <div style="display: flex; flex-direction: column">
+              <h4
+                style="
+                  font-size: 1.05rem;
+                  font-weight: 750;
+                  color: var(--primary-color);
+                "
+              >
+                {{ report.user.nama_lengkap }}
+              </h4>
+              <span
+                style="
+                  font-size: 0.8rem;
+                  color: var(--text-muted);
+                  font-weight: 500;
+                "
+                >Dilaporkan: {{ report.created_at|date:"d M Y, H:i" }} WIB</span
+              >
+              <span style="font-size: 0.8rem; color: var(--text-muted)"
+                >Email: {{ report.user.email }} | Telp: {{ report.user.nomor_hp
+                }}</span
+              >
+            </div>
+          </div>
+          <!-- Status Badge -->
+          {% if report.status == 'Pending' %}
+          <span
+            style="
+              font-size: 0.8rem;
+              color: #991b1b;
+              background-color: #fef2f2;
+              padding: 6px 14px;
+              border-radius: 20px;
+              font-weight: 700;
+              text-transform: uppercase;
+            "
+            >Menunggu Verifikasi</span
+          >
+          {% elif report.status == 'Diverifikasi' %}
+          <span
+            style="
+              font-size: 0.8rem;
+              color: #1e40af;
+              background-color: #eff6ff;
+              padding: 6px 14px;
+              border-radius: 20px;
+              font-weight: 700;
+              text-transform: uppercase;
+            "
+            >Diverifikasi</span
+          >
+          {% elif report.status == 'Diproses' %}
+          <span
+            style="
+              font-size: 0.8rem;
+              color: #92400e;
+              background-color: #fffbeb;
+              padding: 6px 14px;
+              border-radius: 20px;
+              font-weight: 700;
+              text-transform: uppercase;
+            "
+            >Dalam Proses</span
+          >
+          {% else %}
+          <span
+            style="
+              font-size: 0.8rem;
+              color: #065f46;
+              background-color: #ecfdf5;
+              padding: 6px 14px;
+              border-radius: 20px;
+              font-weight: 700;
+              text-transform: uppercase;
+            "
+            >Selesai Dikerjakan</span
+          >
+          {% endif %}
+        </div>
+
+        <div style="height: 1px; background-color: var(--border-color)"></div>
+
+        <!-- Description -->
+        <div>
+          <h5
+            style="
+              font-size: 0.85rem;
+              font-weight: 700;
+              color: var(--text-muted);
+              text-transform: uppercase;
+              letter-spacing: 0.5px;
+              margin-bottom: 8px;
+            "
+          >
+            Deskripsi Kerusakan
+          </h5>
+          <p
+            style="
+              font-size: 0.95rem;
+              color: var(--text-dark);
+              line-height: 1.6;
+              font-weight: 500;
+            "
+          >
+            {{ report.deskripsi }}
+          </p>
+        </div>
+
+        <!-- Info Badges Grid (4 columns) -->
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 16px;
+            margin-top: 10px;
+          "
+        >
+          <div
+            style="
+              background-color: var(--bg-light);
+              border: 1.5px solid var(--border-color);
+              border-radius: 8px;
+              padding: 12px;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <span
+              style="
+                font-size: 0.65rem;
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+              "
+              >Kategori</span
+            >
+            <span
+              style="
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--primary-color);
+              "
+              >{{ report.get_kategori_display }}</span
+            >
+          </div>
+          <div
+            style="
+              background-color: var(--bg-light);
+              border: 1.5px solid var(--border-color);
+              border-radius: 8px;
+              padding: 12px;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <span
+              style="
+                font-size: 0.65rem;
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+              "
+              >Urgensi</span
+            >
+            <span style="font-size: 0.85rem; font-weight: 700; color: #b45309"
+              >{{ report.urgensi }}</span
+            >
+          </div>
+          <div
+            style="
+              background-color: var(--bg-light);
+              border: 1.5px solid var(--border-color);
+              border-radius: 8px;
+              padding: 12px;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <span
+              style="
+                font-size: 0.65rem;
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+              "
+              >Aset ID</span
+            >
+            <span
+              style="
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--text-dark);
+              "
+              >{{ report.aset_id }}</span
+            >
+          </div>
+          <div
+            style="
+              background-color: var(--bg-light);
+              border: 1.5px solid var(--border-color);
+              border-radius: 8px;
+              padding: 12px;
+              display: flex;
+              flex-direction: column;
+              gap: 2px;
+            "
+          >
+            <span
+              style="
+                font-size: 0.65rem;
+                font-weight: 700;
+                color: var(--text-muted);
+                text-transform: uppercase;
+              "
+              >Petugas</span
+            >
+            <span
+              style="
+                font-size: 0.85rem;
+                font-weight: 700;
+                color: var(--primary-light);
+              "
+              >{{ report.petugas }}</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Evidence Photo Gallery -->
+      <div
+        class="card"
+        style="padding: 28px; display: flex; flex-direction: column; gap: 16px"
+      >
+        <h3 style="font-size: 1.1rem; font-weight: 750">Galeri Bukti</h3>
+        <div
+          style="
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 16px;
+          "
+        >
+          <!-- Photo slot 1 (actual upload) -->
+          <div
+            style="
+              height: 140px;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid var(--border-color);
+              position: relative;
+            "
+          >
+            {% if report.foto %}
+            <img
+              src="{{ report.foto.url }}"
+              alt="Bukti 1"
+              style="
+                width: 100%;
+                height: 100%;
+                object-fit: cover;
+                cursor: pointer;
+              "
+              onclick="openFullscreenImage(this.src)"
+            />
+            {% else %}
+            <div
+              style="
+                width: 100%;
+                height: 100%;
+                display: flex;
+                flex-direction: column;
+                align-items: center;
+                justify-content: center;
+                background-color: var(--bg-light);
+                color: var(--text-light);
+                gap: 6px;
+              "
+            >
+              <i data-lucide="image-off" style="width: 24px; height: 24px"></i>
+              <span style="font-size: 0.75rem">Tidak ada foto</span>
+            </div>
+            {% endif %}
+          </div>
+          <!-- Photo slot 2 (mock/additional) -->
+          <div
+            style="
+              height: 140px;
+              border-radius: 8px;
+              overflow: hidden;
+              border: 1px solid var(--border-color);
+              position: relative;
+              background-color: var(--bg-light);
+              display: flex;
+              align-items: center;
+              justify-content: center;
+              color: var(--text-light);
+            "
+          >
+            <i
+              data-lucide="lock"
+              style="width: 20px; height: 20px; margin-bottom: 4px"
+            ></i>
+          </div>
+          <!-- Photo slot 3 (Add Photo button mock) -->
+          <div
+            style="
+              height: 140px;
+              border-radius: 8px;
+              border: 2px dashed var(--border-color);
+              display: flex;
+              flex-direction: column;
+              align-items: center;
+              justify-content: center;
+              color: var(--text-light);
+              cursor: pointer;
+              transition: var(--transition);
+            "
+            class="add-photo-btn-mock"
+            onclick="window.location.href='{% url 'admin_update_status' report.pk %}'"
+          >
+            <i
+              data-lucide="camera"
+              style="width: 24px; height: 24px; color: var(--text-light)"
+            ></i>
+            <span
+              style="
+                font-size: 0.75rem;
+                font-weight: 600;
+                margin-top: 6px;
+                text-transform: uppercase;
+              "
+              >Tambah Foto</span
+            >
+          </div>
+        </div>
+      </div>
+
+      <!-- Location Map Section -->
+      <div
+        class="card"
+        style="padding: 28px; display: flex; flex-direction: column; gap: 16px"
+      >
+        <h3
+          style="
+            font-size: 1.1rem;
+            font-weight: 750;
+            display: flex;
+            align-items: center;
+            gap: 8px;
+          "
+        >
+          <i data-lucide="map-pin" style="color: var(--primary-light)"></i>
+          <span>Lokasi Kejadian</span>
+        </h3>
+
+        <div style="display: flex; flex-direction: column; gap: 12px">
+          {% if report.latitude and report.longitude %}
+          <!-- Live Leaflet Map -->
+          <div id="admin-report-map"></div>
+          <!-- Coordinate badge -->
+          <div class="coord-badge-admin">
+            <span class="cdot"></span>
+            <span>Lat: {{ report.latitude }}, Lng: {{ report.longitude }}</span>
+          </div>
+          {% else %}
+          <!-- No coordinates recorded -->
+          <div class="no-coord-state">
+            <i data-lucide="map-off" style="width: 28px; height: 28px"></i>
+            <span>Titik koordinat belum dicatat untuk laporan ini.</span>
+          </div>
+          {% endif %}
+
+          <div
+            style="
+              font-size: 0.9rem;
+              font-weight: 600;
+              color: var(--text-dark);
+              background-color: var(--bg-light);
+              padding: 12px;
+              border-radius: 8px;
+              border: 1px solid var(--border-color);
+            "
+          >
+            Detail Alamat: {{ report.lokasi }}
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Right Column: Actions & Timeline -->
+    <div style="display: flex; flex-direction: column; gap: 24px">
+      <!-- Quick Actions Card -->
+      <div
+        class="card"
+        style="
+          padding: 24px;
+          display: flex;
+          flex-direction: column;
+          gap: 16px;
+          background-color: var(--primary-dark);
+          color: #fff;
+        "
+      >
+        <h3
+          style="
+            font-size: 1.15rem;
+            font-weight: 700;
+            color: #fff;
+            margin-bottom: 4px;
+          "
+        >
+          Aksi Cepat
+        </h3>
+
+        <a
+          href="{% url 'admin_update_status' report.pk %}"
+          class="btn"
+          style="
+            background-color: rgba(255, 255, 255, 0.08);
+            color: #fff;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+          "
+        >
+          <span style="display: flex; align-items: center; gap: 10px"
+            ><i data-lucide="user-check" style="width: 18px; height: 18px"></i>
+            Update Status</span
+          >
+          <i
+            data-lucide="chevron-right"
+            style="width: 16px; height: 16px; opacity: 0.6"
+          ></i>
+        </a>
+
+        <button
+          class="btn"
+          onclick="triggerRejectAlert()"
+          style="
+            background-color: #ef4444;
+            color: #fff;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+          "
+        >
+          <span style="display: flex; align-items: center; gap: 10px"
+            ><i data-lucide="slash" style="width: 18px; height: 18px"></i> Tolak
+            Laporan</span
+          >
+          <i
+            data-lucide="chevron-right"
+            style="width: 16px; height: 16px; opacity: 0.6"
+          ></i>
+        </button>
+
+        <form
+          id="delete-report-form"
+          action="{% url 'admin_delete' report.pk %}"
+          method="POST"
+          style="display: none"
+        >
+          {% csrf_token %}
+        </form>
+        <button
+          class="btn"
+          onclick="triggerDeleteAlert()"
+          style="
+            background-color: #dc2626;
+            color: #fff;
+            text-align: left;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px 16px;
+            border-radius: 8px;
+            border: none;
+            cursor: pointer;
+            transition: background-color 0.2s;
+          "
+        >
+          <span style="display: flex; align-items: center; gap: 10px"
+            ><i data-lucide="trash-2" style="width: 18px; height: 18px"></i>
+            Hapus Laporan</span
+          >
+          <i
+            data-lucide="chevron-right"
+            style="width: 16px; height: 16px; opacity: 0.6"
+          ></i>
+        </button>
+      </div>
+
+      <!-- Timeline Status Card -->
+      <div
+        class="card"
+        style="padding: 24px; display: flex; flex-direction: column; gap: 20px"
+      >
+        <h3
+          style="
+            font-size: 1.1rem;
+            font-weight: 750;
+            border-bottom: 1px solid var(--border-color);
+            padding-bottom: 12px;
+          "
+        >
+          Timeline Status
+        </h3>
+
+        <div
+          style="
+            display: flex;
+            flex-direction: column;
+            gap: 24px;
+            position: relative;
+            padding-left: 28px;
+          "
+        >
+          <!-- Line track -->
+          <div
+            style="
+              position: absolute;
+              top: 8px;
+              bottom: 8px;
+              left: 9px;
+              width: 2px;
+              background-color: var(--border-color);
+              z-index: 1;
+            "
+          ></div>
+
+          {% for step in timeline %}
+          <div
+            style="
+              position: relative;
+              display: flex;
+              flex-direction: column;
+              gap: 4px;
+            "
+          >
+            <!-- Dot indicator -->
+            <div
+              class="{% if step.status %}dot-active{% else %}dot-inactive{% endif %}"
+              style="
+                position: absolute;
+                left: -28px;
+                top: 4px;
+                width: 20px;
+                height: 20px;
+                border-radius: 50%;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                z-index: 2;
+              "
+            >
+              {% if step.status %}
+              <i
+                data-lucide="check"
+                style="width: 12px; height: 12px; color: #fff"
+              ></i>
+              {% endif %}
+            </div>
+
+            <div
+              style="
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+              "
+            >
+              <h4
+                class="step-title {% if step.status %}step-active{% else %}step-inactive{% endif %}"
+                style="font-size: 0.88rem; font-weight: 750"
+              >
+                {{ step.title }}
+              </h4>
+              {% if step.date %}
+              <span
+                style="
+                  font-size: 0.72rem;
+                  color: var(--text-muted);
+                  font-weight: 500;
+                "
+                >{{ step.date|date:"d M H:i" }}</span
+              >
+              {% endif %}
+            </div>
+            <p
+              style="
+                font-size: 0.78rem;
+                color: var(--text-muted);
+                line-height: 1.4;
+              "
+            >
+              {{ step.desc }}
+            </p>
+          </div>
+          {% endfor %}
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<!-- Fullscreen Image Preview overlay -->
+<div
+  class="modal-backdrop hide"
+  id="fullscreenOverlay"
+  onclick="this.classList.add('hide')"
+>
+  <img
+    src=""
+    alt="Fullscreen Preview"
+    id="fullscreenImg"
+    style="
+      max-height: 85vh;
+      max-width: 90vw;
+      object-fit: contain;
+      border-radius: 12px;
+      box-shadow: var(--shadow-lg);
+    "
+  />
+</div>
+
+<script
+  src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"
+  integrity="sha256-20nQCchB9co0qIjJZRGuk2/Z9VM+kNiyxNV/XN/WLs="
+  crossorigin=""
+></script>
+<script>
+  function openFullscreenImage(src) {
+    const overlay = document.getElementById("fullscreenOverlay");
+    const img = document.getElementById("fullscreenImg");
+    img.src = src;
+    overlay.classList.remove("hide");
+  }
+
+  function triggerRejectAlert() {
+    if (
+      confirm(
+        "Apakah Anda yakin ingin menolak laporan pengaduan ini? Status akan diubah menjadi Ditolak dan pelapor akan menerima notifikasi.",
+      )
+    ) {
+      window.location.href = "{% url 'admin_update_status' report.pk %}";
+    }
+  }
+
+  function triggerDeleteAlert() {
+    if (
+      confirm(
+        "Apakah Anda yakin ingin menghapus laporan pengaduan #SPID-{{ report.id }} secara permanen? Tindakan ini tidak dapat dibatalkan.",
+      )
+    ) {
+      document.getElementById("delete-report-form").submit();
+    }
+  }
+
+  // ── LEAFLET MAP (Admin Detail) ──────────────────────────────────────
+  /* {% if report.latitude and report.longitude %} */
+  (function () {
+    const lat = parseFloat("{{ report.latitude }}");
+    const lng = parseFloat("{{ report.longitude }}");
+
+    const adminMap = L.map("admin-report-map", {
+      center: [lat, lng],
+      zoom: 16,
+      zoomControl: true,
+      scrollWheelZoom: false,
+    });
+
+    L.tileLayer("https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png", {
+      attribution:
+        '&copy; <a href="https://www.openstreetmap.org/copyright">OpenStreetMap</a> contributors',
+      maxZoom: 19,
+    }).addTo(adminMap);
+
+    // Custom marker icon
+    const markerIcon = L.divIcon({
+      className: "",
+      html: `
+                <div style="width:32px;height:42px;filter:drop-shadow(0 3px 6px rgba(12,26,103,0.5));">
+                    <svg viewBox="0 0 32 42" fill="none" xmlns="http://www.w3.org/2000/svg" style="width:100%;height:100%;">
+                        <path d="M16 0C7.16 0 0 7.16 0 16c0 10.49 14.27 25.05 15.11 25.94a1.2 1.2 0 001.78 0C17.73 41.05 32 26.49 32 16 32 7.16 24.84 0 16 0z" fill="#0c1a67"/>
+                        <circle cx="16" cy="16" r="7" fill="white"/>
+                        <circle cx="16" cy="16" r="4" fill="#1b2a85"/>
+                    </svg>
+                </div>
+            `,
+      iconSize: [32, 42],
+      iconAnchor: [16, 42],
+      popupAnchor: [0, -44],
+    });
+
+    const reportLabel = `<strong>Laporan #{{ report.id|stringformat:"04d" }}</strong><br>
+            <span style="font-size:0.78rem;color:#4b5563;">{{ report.lokasi|truncatechars:50 }}</span>`;
+
+    L.marker([lat, lng], { icon: markerIcon })
+      .addTo(adminMap)
+      .bindPopup(reportLabel, { maxWidth: 220 })
+      .openPopup();
+
+    setTimeout(() => adminMap.invalidateSize(), 300);
+  })();
+  /* {% endif %} */
+</script>
+{% endblock %}

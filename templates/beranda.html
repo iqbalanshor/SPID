@@ -1,0 +1,147 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Beranda - Portal SPID{% endblock %}
+
+{% block content %}
+<div class="beranda-container">
+    
+    <!-- Welcome Hero Banner -->
+    <section class="hero-banner">
+        <div class="hero-content">
+            <span class="hero-badge">Layanan Publik Digital</span>
+            <h2 class="hero-title">Selamat Datang di Portal SPID</h2>
+            <p class="hero-desc">
+                SPID adalah platform resmi pemerintah daerah yang dirancang untuk mempermudah warga dalam melaporkan permasalahan infrastruktur umum secara transparan, akuntabel, dan efisien.
+            </p>
+        </div>
+        <div class="hero-image-container">
+            <img src="{% static 'images/hero.jpg' %}" alt="Infrastruktur Kota" class="hero-img">
+        </div>
+    </section>
+
+    <!-- Info & Principles Grid Section -->
+    <div class="info-grid">
+        <!-- Mengenai SPID -->
+        <div class="about-card card">
+            <div class="card-header-icon-title">
+                <i data-lucide="info" class="icon-info-yellow"></i>
+                <h3 class="card-title">Mengenai SPID</h3>
+            </div>
+            <div class="card-body">
+                <p>
+                    Sistem Pengaduan Infrastruktur Daerah (SPID) merupakan jembatan komunikasi antara masyarakat dan dinas terkait. Sistem ini dibangun untuk memastikan setiap keluhan mengenai kerusakan jalan, jembatan, penerangan lampu jalan, hingga fasilitas umum lainnya dapat didokumentasikan dan ditindaklanjuti secara sistematis.
+                </p>
+                <div class="quote-box">
+                    <p>"Mewujudkan infrastruktur daerah yang berkualitas melalui partisipasi aktif masyarakat."</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- Prinsip Layanan -->
+        <div class="principles-card">
+            <div class="principles-header">
+                <i data-lucide="shield-check" class="icon-shield-gold"></i>
+                <h3 class="principles-title">Prinsip Layanan</h3>
+            </div>
+            <ul class="principles-list">
+                <li>
+                    <div class="checkmark-circle">
+                        <i data-lucide="check" class="icon-check"></i>
+                    </div>
+                    <span>Transparansi Proses Penanganan</span>
+                </li>
+                <li>
+                    <div class="checkmark-circle">
+                        <i data-lucide="check" class="icon-check"></i>
+                    </div>
+                    <span>Akuntabilitas Petugas Lapangan</span>
+                </li>
+                <li>
+                    <div class="checkmark-circle">
+                        <i data-lucide="check" class="icon-check"></i>
+                    </div>
+                    <span>Kecepatan Respon Berjenjang</span>
+                </li>
+                <li>
+                    <div class="checkmark-circle">
+                        <i data-lucide="check" class="icon-check"></i>
+                    </div>
+                    <span>Keamanan Data Pelapor</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <!-- Pengumuman Terbaru Section -->
+    {% if announcements %}
+    <section class="announcements-section card">
+        <div class="card-header-icon-title">
+            <i data-lucide="bell" class="icon-bell-blue" style="color: var(--primary-light); width: 24px; height: 24px;"></i>
+            <h3 class="card-title">Pengumuman & Informasi Terbaru</h3>
+        </div>
+        <div class="announcements-list-wrapper" style="display: flex; flex-direction: column;">
+            {% for ann in announcements %}
+                <div class="announcement-item" style="padding: 16px 0; border-bottom: 1px solid var(--border-color); margin-bottom: 10px;">
+                    <div class="announcement-meta" style="display: flex; gap: 12px; align-items: center; margin-bottom: 6px;">
+                        <span class="announcement-date-badge" style="font-size: 0.75rem; background-color: var(--bg-light); padding: 4px 10px; border-radius: 4px; font-weight: 600; color: var(--text-muted);">
+                            {{ ann.created_at|date:"d M Y, H:i" }} WIB
+                        </span>
+                    </div>
+                    <h4 class="announcement-item-title" style="font-size: 1.05rem; font-weight: 700; color: var(--primary-color); margin-bottom: 6px;">{{ ann.judul }}</h4>
+                    <p class="announcement-item-content" style="font-size: 0.9rem; color: var(--text-muted); line-height: 1.6;">{{ ann.konten|linebreaksbr }}</p>
+                </div>
+            {% endfor %}
+        </div>
+    </section>
+    {% endif %}
+
+    <!-- Panduan Penggunaan Sistem -->
+    <section class="guide-card card">
+        <h3 class="section-title">Panduan Penggunaan Sistem</h3>
+        <div class="guide-steps-grid">
+            <!-- Step 1 -->
+            <div class="guide-step">
+                <div class="step-number">01</div>
+                <h4 class="step-title">Identifikasi Masalah</h4>
+                <p class="step-desc">
+                    Pastikan Anda memiliki foto dokumentasi kerusakan infrastruktur yang valid dan detail lokasi kejadian.
+                </p>
+            </div>
+            <!-- Step 2 -->
+            <div class="guide-step">
+                <div class="step-number">02</div>
+                <h4 class="step-title">Isi Form Pengaduan</h4>
+                <p class="step-desc">
+                    Klik menu "Form Pengaduan" dan lengkapi detail data mulai dari kategori, lokasi, hingga deskripsi lengkap.
+                </p>
+            </div>
+            <!-- Step 3 -->
+            <div class="guide-step">
+                <div class="step-number">03</div>
+                <h4 class="step-title">Verifikasi Sistem</h4>
+                <p class="step-desc">
+                    Admin akan melakukan verifikasi awal untuk memastikan keaslian laporan sebelum diteruskan ke dinas teknis.
+                </p>
+            </div>
+            <!-- Step 4 -->
+            <div class="guide-step">
+                <div class="step-number">04</div>
+                <h4 class="step-title">Pantau Status</h4>
+                <p class="step-desc">
+                    Gunakan menu "Tracking" untuk melihat perkembangan laporan Anda secara real-time hingga selesai dikerjakan.
+                </p>
+            </div>
+        </div>
+
+        <div class="guide-footer">
+            <span class="guide-cta-text">Siap membantu membangun daerah lebih baik?</span>
+            <a href="{% url 'form_pengaduan' %}" class="btn btn-primary btn-cta">
+                <span>Buat Pengaduan Sekarang</span>
+                <i data-lucide="arrow-right" class="btn-icon"></i>
+            </a>
+        </div>
+    </section>
+
+</div>
+{% endblock %}

@@ -1,0 +1,213 @@
+{% load static %}
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Daftar Akun Baru - SPID</title>
+    <!-- Google Fonts: Inter & Outfit -->
+    <link rel="preconnect" href="https://fonts.googleapis.com" />
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+    <link
+      href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=Outfit:wght@400;500;600;700;800&display=swap"
+      rel="stylesheet"
+    />
+    <!-- Custom Style Sheet -->
+    <link rel="stylesheet" href="{% static 'css/style.css' %}" />
+  </head>
+  <body class="auth-body flex-center scroll-y">
+    <div class="register-container">
+      <!-- Logo Area -->
+      <div class="register-header-brand">
+        <div class="brand-icon-container logo-blue">
+          <i data-lucide="landmark" class="brand-icon-svg"></i>
+        </div>
+        <h2 class="register-logo-title">SPID</h2>
+        <span class="register-logo-subtitle"
+          >Sistem Pengaduan Infrastruktur Daerah</span
+        >
+      </div>
+
+      <!-- Form Card -->
+      <div class="register-card card">
+        <h3 class="register-card-title">Buat Akun Baru</h3>
+
+        <!-- Alert Messages -->
+        {% if messages %}
+        <div class="messages-container">
+          {% for message in messages %}
+          <div class="alert alert-{{ message.tags }}">
+            <span>{{ message }}</span>
+          </div>
+          {% endfor %}
+        </div>
+        {% endif %}
+
+        <form method="POST" class="auth-form" autocomplete="off">
+          {% csrf_token %}
+
+          <!-- Nama Lengkap -->
+          <div class="form-group-auth">
+            <label for="id_nama_lengkap" class="form-label-auth"
+              >Nama Lengkap</label
+            >
+            <div class="input-with-icon">
+              <i data-lucide="user" class="input-icon-left"></i>
+              {{ form.nama_lengkap }}
+            </div>
+            {% if form.nama_lengkap.errors %}
+            <span class="field-error-text"
+              >{{ form.nama_lengkap.errors.0 }}</span
+            >
+            {% endif %}
+          </div>
+
+          <!-- Email -->
+          <div class="form-group-auth">
+            <label for="id_email" class="form-label-auth">Email</label>
+            <div class="input-with-icon">
+              <i data-lucide="mail" class="input-icon-left"></i>
+              {{ form.email }}
+            </div>
+            {% if form.email.errors %}
+            <span class="field-error-text">{{ form.email.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Nomor HP -->
+          <div class="form-group-auth">
+            <label for="id_nomor_hp" class="form-label-auth">Nomor HP</label>
+            <div class="input-with-icon">
+              <i data-lucide="phone" class="input-icon-left"></i>
+              {{ form.nomor_hp }}
+            </div>
+            {% if form.nomor_hp.errors %}
+            <span class="field-error-text">{{ form.nomor_hp.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Username -->
+          <div class="form-group-auth">
+            <label for="id_username" class="form-label-auth">Username</label>
+            <div class="input-with-icon">
+              <i data-lucide="at-sign" class="input-icon-left"></i>
+              {{ form.username }}
+            </div>
+            {% if form.username.errors %}
+            <span class="field-error-text">{{ form.username.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Password -->
+          <div class="form-group-auth">
+            <label for="id_password1" class="form-label-auth">Password</label>
+            <div class="input-with-icon">
+              <i data-lucide="lock" class="input-icon-left"></i>
+              {{ form.password1 }}
+              <button
+                type="button"
+                class="password-toggle-btn"
+                onclick="
+                  togglePasswordVisibility('id_password1', 'toggle-icon')
+                "
+              >
+                <i
+                  data-lucide="eye"
+                  id="toggle-icon"
+                  class="input-icon-right"
+                ></i>
+              </button>
+            </div>
+            <span class="field-info-text">Minimal 8 karakter</span>
+            {% if form.password1.errors %}
+            <span class="field-error-text">{{ form.password1.errors.0 }}</span>
+            {% endif %} {% if form.password2.errors %}
+            <span class="field-error-text">{{ form.password2.errors.0 }}</span>
+            {% endif %}
+          </div>
+
+          <!-- Hidden password2 field, populated from password1 automatically in standard django registration forms -->
+          <input type="hidden" name="password2" id="id_password2" />
+
+          <!-- Terms and Conditions -->
+          <div class="form-options-row">
+            <label class="checkbox-container-auth">
+              <input
+                type="checkbox"
+                required
+                name="agree_terms"
+                class="form-check-input"
+                checked
+              />
+              <span class="checkbox-label label-terms"
+                >Saya setuju dengan
+                <a href="#" class="auth-link font-medium">Syarat & Ketentuan</a>
+                serta
+                <a href="#" class="auth-link font-medium">Kebijakan Privasi</a>
+                yang berlaku.</span
+              >
+            </label>
+          </div>
+
+          <!-- Submit Button -->
+          <button
+            type="submit"
+            class="btn btn-primary btn-auth margin-top-md"
+            id="register-btn"
+          >
+            <span>Daftar Sekarang</span>
+          </button>
+        </form>
+
+        <div class="auth-switch-page card-footer-auth">
+          <span
+            >Sudah memiliki akun?
+            <a href="{% url 'login' %}" class="auth-link font-bold"
+              >Masuk di sini</a
+            ></span
+          >
+        </div>
+      </div>
+
+      <!-- Footer -->
+      <footer class="register-footer text-center">
+        <p>
+          © 2026 SPID - Sistem Pengaduan Infrastruktur Daerah. Dinas Komunikasi
+          dan Informatika.
+        </p>
+        <p class="footer-links">
+          <a href="#">Pusat Bantuan</a> &nbsp;•&nbsp;
+          <a href="#">Panduan Penggunaan</a>
+        </p>
+      </footer>
+    </div>
+
+    <!-- Lucide Icons Library -->
+    <script src="https://unpkg.com/lucide@latest"></script>
+    <script>
+      lucide.createIcons();
+
+      // Synchronize password2 field with password1 for Django UserCreationForm
+      const password1Field = document.getElementById("id_password1");
+      const password2Field = document.getElementById("id_password2");
+
+      password1Field.addEventListener("input", function () {
+        password2Field.value = password1Field.value;
+      });
+
+      function togglePasswordVisibility(fieldId, iconId) {
+        const passwordField = document.getElementById(fieldId);
+        const toggleIcon = document.getElementById(iconId);
+
+        if (passwordField.type === "password") {
+          passwordField.type = "text";
+          toggleIcon.setAttribute("data-lucide", "eye-off");
+        } else {
+          passwordField.type = "password";
+          toggleIcon.setAttribute("data-lucide", "eye");
+        }
+        lucide.createIcons(); // re-render icons
+      }
+    </script>
+  </body>
+</html>

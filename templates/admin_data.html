@@ -1,0 +1,233 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Data Pengaduan - SPID Admin{% endblock %}
+
+{% block content %}
+<div class="admin-data-container" style="display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- Header section -->
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <div>
+            <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--primary-color);">Data Pengaduan</h2>
+            <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">Manajemen data laporan infrastruktur publik secara real-time.</p>
+        </div>
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'admin_export' %}" class="btn btn-primary" style="background-color: #000; padding: 10px 18px;">
+                <i data-lucide="download" class="btn-small-icon"></i>
+                <span>Ekspor Laporan</span>
+            </a>
+        </div>
+    </div>
+
+    <!-- Stats summary widgets (Edge left borders matching screenshot) -->
+    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 20px;">
+        <div class="card" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0;">
+            <div style="background-color: #f1f5f9; padding: 10px; border-radius: 8px;">
+                <i data-lucide="folder" style="color: var(--primary-color); width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Total Laporan</span>
+                <h4 style="font-size: 1.3rem; font-weight: 800; color: var(--primary-color); line-height: 1.2;">{{ total_count }}</h4>
+            </div>
+        </div>
+        
+        <div class="card" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0; border-left: 4px solid #ef4444;">
+            <div style="background-color: #fef2f2; padding: 10px; border-radius: 8px;">
+                <i data-lucide="clock" style="color: #ef4444; width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Menunggu</span>
+                <h4 style="font-size: 1.3rem; font-weight: 800; color: #ef4444; line-height: 1.2;">{{ pending_count }}</h4>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0; border-left: 4px solid #3b82f6;">
+            <div style="background-color: #eff6ff; padding: 10px; border-radius: 8px;">
+                <i data-lucide="refresh-cw" style="color: #3b82f6; width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Diproses</span>
+                <h4 style="font-size: 1.3rem; font-weight: 800; color: #3b82f6; line-height: 1.2;">{{ processed_count }}</h4>
+            </div>
+        </div>
+
+        <div class="card" style="padding: 16px 20px; display: flex; align-items: center; gap: 16px; margin-bottom: 0; border-left: 4px solid #10b981;">
+            <div style="background-color: #ecfdf5; padding: 10px; border-radius: 8px;">
+                <i data-lucide="check-circle" style="color: #10b981; width: 20px; height: 20px;"></i>
+            </div>
+            <div>
+                <span style="font-size: 0.75rem; color: var(--text-muted); font-weight: 600;">Selesai</span>
+                <h4 style="font-size: 1.3rem; font-weight: 800; color: #10b981; line-height: 1.2;">{{ completed_count }}</h4>
+            </div>
+        </div>
+    </div>
+
+    <!-- Data Card -->
+    <div class="card" style="padding: 0; overflow: hidden; display: flex; flex-direction: column;">
+        <!-- Filter bar -->
+        <div style="padding: 20px 24px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 16px; background-color: var(--bg-light);">
+            <!-- Tabs (Category filter) -->
+            <div style="display: flex; gap: 8px;">
+                <a href="?kategori=Semua&status={{ status_filter }}" class="tab-btn {% if kategori_tab == 'Semua' %}active{% endif %}">Semua</a>
+                <a href="?kategori=Jalan&status={{ status_filter }}" class="tab-btn {% if kategori_tab == 'Jalan' %}active{% endif %}">Jalan</a>
+                <a href="?kategori=Jembatan&status={{ status_filter }}" class="tab-btn {% if kategori_tab == 'Jembatan' %}active{% endif %}">Jembatan</a>
+                <a href="?kategori=Irigasi&status={{ status_filter }}" class="tab-btn {% if kategori_tab == 'Irigasi' %}active{% endif %}">Irigasi</a>
+            </div>
+
+            <!-- Dropdown form -->
+            <form method="GET" style="display: flex; gap: 12px; align-items: center;">
+                <!-- Status Dropdown -->
+                <select name="status" onchange="this.form.submit()" class="form-control-input select-input" style="padding: 8px 36px 8px 16px; font-size: 0.85rem; border-radius: 6px; width: 160px; background-color: #fff;">
+                    <option value="Semua Status" {% if status_filter == 'Semua Status' %}selected{% endif %}>Semua Status</option>
+                    <option value="Pending" {% if status_filter == 'Pending' %}selected{% endif %}>Pending (Mendesak)</option>
+                    <option value="Diverifikasi" {% if status_filter == 'Diverifikasi' %}selected{% endif %}>Diverifikasi</option>
+                    <option value="Diproses" {% if status_filter == 'Diproses' %}selected{% endif %}>Diproses</option>
+                    <option value="Selesai" {% if status_filter == 'Selesai' %}selected{% endif %}>Selesai</option>
+                </select>
+
+                <!-- Kategori Dropdown -->
+                <select name="kategori" onchange="this.form.submit()" class="form-control-input select-input" style="padding: 8px 36px 8px 16px; font-size: 0.85rem; border-radius: 6px; width: 220px; background-color: #fff;">
+                    <option value="Semua" {% if kategori_tab == 'Semua' %}selected{% endif %}>Semua Kategori</option>
+                    <option value="Jalan" {% if kategori_tab == 'Jalan' %}selected{% endif %}>Kerusakan Jalan</option>
+                    <option value="Jembatan" {% if kategori_tab == 'Jembatan' %}selected{% endif %}>Kerusakan Jembatan</option>
+                    <option value="Penerangan" {% if kategori_tab == 'Penerangan' %}selected{% endif %}>Lampu Penerangan Jalan</option>
+                    <option value="Fasilitas" {% if kategori_tab == 'Fasilitas' %}selected{% endif %}>Fasilitas Umum Lainnya</option>
+                    <option value="Irigasi" {% if kategori_tab == 'Irigasi' %}selected{% endif %}>Saluran Air / Irigasi</option>
+                    <option value="Lainnya" {% if kategori_tab == 'Lainnya' %}selected{% endif %}>Lain-lain</option>
+                </select>
+            </form>
+        </div>
+
+        <!-- Table Grid -->
+        <div class="table-responsive">
+            <table class="tracking-table" style="width: 100%;">
+                <thead>
+                    <tr>
+                        <th style="padding-left: 28px;">ID Laporan</th>
+                        <th>Tanggal</th>
+                        <th>Kategori</th>
+                        <th>Lokasi / Keterangan</th>
+                        <th>Status</th>
+                        <th style="padding-right: 28px; text-align: right;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in page_obj %}
+                    <tr>
+                        <td class="font-bold" style="padding-left: 28px; color: var(--text-dark);">#P-{{ r.created_at|date:"Ymd" }}-{{ r.id|stringformat:"03d" }}</td>
+                        <td>{{ r.created_at|date:"d M Y" }}</td>
+                        <td>
+                            <span class="category-pill text-category-{{ r.kategori }}">
+                                {% if r.kategori == 'Jalan' %}<i data-lucide="road" class="pill-icon"></i>
+                                {% elif r.kategori == 'Jembatan' %}<i data-lucide="bridge" class="pill-icon"></i>
+                                {% elif r.kategori == 'Penerangan' %}<i data-lucide="lightbulb" class="pill-icon"></i>
+                                {% elif r.kategori == 'Fasilitas' %}<i data-lucide="building-2" class="pill-icon"></i>
+                                {% elif r.kategori == 'Irigasi' %}<i data-lucide="droplet" class="pill-icon"></i>
+                                {% else %}<i data-lucide="help-circle" class="pill-icon"></i>
+                                {% endif %}
+                                {{ r.get_kategori_display }}
+                            </span>
+                        </td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 2px; max-width: 380px;">
+                                <span style="font-weight: 700; color: var(--text-dark);">{{ r.lokasi|truncatewords:4 }}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted); white-space: nowrap; overflow: hidden; text-overflow: ellipsis;">{{ r.deskripsi }}</span>
+                            </div>
+                        </td>
+                        <td>
+                            {% if r.status == 'Pending' %}
+                                <span style="font-size: 0.8rem; color: #991b1b; background-color: #fef2f2; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Mendesak</span>
+                            {% elif r.status == 'Diverifikasi' %}
+                                <span style="font-size: 0.8rem; color: #1e40af; background-color: #eff6ff; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Diverifikasi</span>
+                            {% elif r.status == 'Diproses' %}
+                                <span style="font-size: 0.8rem; color: #92400e; background-color: #fffbeb; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Diproses</span>
+                            {% else %}
+                                <span style="font-size: 0.8rem; color: #065f46; background-color: #ecfdf5; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Selesai</span>
+                            {% endif %}
+                        </td>
+                        <td style="padding-right: 28px; text-align: right;">
+                            <div style="display: inline-flex; gap: 8px; justify-content: flex-end; align-items: center;">
+                                <a href="{% url 'admin_detail' r.pk %}" class="btn btn-secondary btn-small" style="padding: 6px 12px; display: inline-flex; align-items: center; gap: 4px;">
+                                    <i data-lucide="eye" style="width: 14px; height: 14px;"></i>
+                                    <span>Detail</span>
+                                </a>
+                                <form action="{% url 'admin_delete' r.pk %}" method="POST" style="margin: 0; display: inline-flex;" onsubmit="return confirm('Apakah Anda yakin ingin menghapus laporan pengaduan #SPID-{{ r.id }} secara permanen? Tindakan ini tidak dapat dibatalkan.');">
+                                    {% csrf_token %}
+                                    <button type="submit" class="btn btn-secondary btn-small btn-delete-danger" style="padding: 6px 12px; display: inline-flex; align-items: center; gap: 4px; color: #dc2626; border-color: #fca5a5; background-color: #fef2f2; cursor: pointer; transition: background-color 0.2s, border-color 0.2s;">
+                                        <i data-lucide="trash-2" style="width: 14px; height: 14px;"></i>
+                                        <span>Hapus</span>
+                                    </button>
+                                </form>
+                            </div>
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">Tidak ada data pengaduan ditemukan matching filter.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+
+        <!-- Pagination Footer Row -->
+        <div style="padding: 20px 28px; border-top: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background-color: var(--bg-light);">
+            <!-- Prev page button -->
+            {% if page_obj.has_previous %}
+                <a href="?page={{ page_obj.previous_page_number }}&kategori={{ kategori_tab }}&status={{ status_filter }}" class="btn btn-secondary btn-small" style="padding: 8px 16px;">Sebelumnya</a>
+            {% else %}
+                <button class="btn btn-secondary btn-small" style="padding: 8px 16px; opacity: 0.5; cursor: not-allowed;" disabled>Sebelumnya</button>
+            {% endif %}
+
+            <!-- Page numbers list -->
+            <div style="display: flex; gap: 6px; align-items: center;">
+                {% for n in page_obj.paginator.page_range %}
+                    {% if page_obj.number == n %}
+                        <span style="width: 32px; height: 32px; background-color: #000; color: #fff; border-radius: 6px; display: flex; align-items: center; justify-content: center; font-weight: 700; font-size: 0.85rem;">{{ n }}</span>
+                    {% elif n > page_obj.number|add:-3 and n < page_obj.number|add:3 %}
+                        <a href="?page={{ n }}&kategori={{ kategori_tab }}&status={{ status_filter }}" style="width: 32px; height: 32px; border: 1px solid var(--border-color); color: var(--text-dark); border-radius: 6px; display: flex; align-items: center; justify-content: center; font-size: 0.85rem; font-weight: 600; background-color: #fff;">{{ n }}</a>
+                    {% endif %}
+                {% endfor %}
+            </div>
+
+            <!-- Next page button -->
+            {% if page_obj.has_next %}
+                <a href="?page={{ page_obj.next_page_number }}&kategori={{ kategori_tab }}&status={{ status_filter }}" class="btn btn-secondary btn-small" style="padding: 8px 16px;">Selanjutnya</a>
+            {% else %}
+                <button class="btn btn-secondary btn-small" style="padding: 8px 16px; opacity: 0.5; cursor: not-allowed;" disabled>Selanjutnya</button>
+            {% endif %}
+        </div>
+    </div>
+
+</div>
+
+<style>
+    /* Category tab filters */
+    .tab-btn {
+        padding: 8px 16px;
+        font-family: var(--font-outfit);
+        font-size: 0.85rem;
+        font-weight: 600;
+        color: var(--text-muted);
+        background-color: #fff;
+        border: 1px solid var(--border-color);
+        border-radius: 6px;
+        transition: var(--transition);
+    }
+    .tab-btn:hover {
+        background-color: var(--bg-main);
+        color: var(--text-dark);
+    }
+    .tab-btn.active {
+        background-color: #eff6ff !important;
+        color: var(--primary-light) !important;
+        border-color: #bfdbfe !important;
+    }
+    .btn-delete-danger:hover {
+        background-color: #fee2e2 !important;
+        border-color: #f87171 !important;
+        color: #b91c1c !important;
+    }
+</style>
+{% endblock %}

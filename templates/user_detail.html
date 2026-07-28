@@ -1,0 +1,151 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Detail Pengaduan #SPID-{{ pengaduan.id }} - Portal SPID{% endblock %}
+
+{% block content %}
+<div class="user-detail-container">
+
+    <!-- Header navigation -->
+    <div class="detail-header-nav">
+        <a href="{% url 'tracking' %}" class="back-link">
+            <i data-lucide="arrow-left" class="back-link-icon"></i>
+            <span>Kembali ke Daftar Tracking</span>
+        </a>
+    </div>
+
+    <!-- Main Grid: Left details & Right timeline -->
+    <div class="detail-grid">
+        
+        <!-- Left: Complaint Details -->
+        <div class="detail-main-col">
+            <div class="card detail-card">
+                <div class="detail-card-header">
+                    <span class="detail-ticket-label">Nomor Tiket</span>
+                    <h2 class="detail-ticket-id">#SPID-{{ pengaduan.id }}</h2>
+                    <span class="status-badge badge-{{ pengaduan.status|lower }} float-right-badge">
+                        {{ pengaduan.status }}
+                    </span>
+                </div>
+
+                <div class="detail-card-body">
+                    <div class="detail-meta-row">
+                        <div class="meta-item">
+                            <span class="meta-label">Kategori Laporan</span>
+                            <span class="meta-value text-category-{{ pengaduan.kategori }}">
+                                {% if pengaduan.kategori == 'Jalan' %}<i data-lucide="road" class="pill-icon-inline"></i>
+                                {% elif pengaduan.kategori == 'Jembatan' %}<i data-lucide="bridge" class="pill-icon-inline"></i>
+                                {% elif pengaduan.kategori == 'Penerangan' %}<i data-lucide="lightbulb" class="pill-icon-inline"></i>
+                                {% elif pengaduan.kategori == 'Fasilitas' %}<i data-lucide="building-2" class="pill-icon-inline"></i>
+                                {% elif pengaduan.kategori == 'Irigasi' %}<i data-lucide="droplet" class="pill-icon-inline"></i>
+                                {% else %}<i data-lucide="help-circle" class="pill-icon-inline"></i>
+                                {% endif %}
+                                {{ pengaduan.get_kategori_display }}
+                            </span>
+                        </div>
+                        <div class="meta-item">
+                            <span class="meta-label">Tanggal Dilaporkan</span>
+                            <span class="meta-value font-medium">{{ pengaduan.created_at|date:"d F Y, H:i" }} WIB</span>
+                        </div>
+                    </div>
+
+                    {% if pengaduan.status == 'Diproses' or pengaduan.status == 'Selesai' or pengaduan.estimasi_selesai or pengaduan.petugas and pengaduan.petugas != 'Belum Ditugaskan' %}
+                    <div class="detail-meta-row" style="margin-top: 15px; border-top: 1px dashed var(--border-color); padding-top: 15px;">
+                        {% if pengaduan.petugas and pengaduan.petugas != 'Belum Ditugaskan' %}
+                        <div class="meta-item">
+                            <span class="meta-label">Petugas Lapangan</span>
+                            <span class="meta-value font-medium">
+                                <i data-lucide="user" class="pill-icon-inline" style="color: var(--primary-light);"></i>
+                                {{ pengaduan.petugas }}
+                            </span>
+                        </div>
+                        {% endif %}
+                        {% if pengaduan.estimasi_selesai %}
+                        <div class="meta-item">
+                            <span class="meta-label">Estimasi Selesai</span>
+                            <span class="meta-value font-medium">
+                                <i data-lucide="calendar" class="pill-icon-inline" style="color: var(--primary-light);"></i>
+                                {{ pengaduan.estimasi_selesai|date:"d F Y" }}
+                            </span>
+                        </div>
+                        {% endif %}
+                    </div>
+                    {% endif %}
+
+                    <hr class="detail-divider">
+
+                    <div class="detail-section">
+                        <h4 class="section-label-bold">Lokasi Kejadian</h4>
+                        <p class="section-value-box bg-light">{{ pengaduan.lokasi }}</p>
+                    </div>
+
+                    <div class="detail-section">
+                        <h4 class="section-label-bold">Deskripsi Kerusakan</h4>
+                        <p class="section-value-box bg-light text-pre">{{ pengaduan.deskripsi }}</p>
+                    </div>
+
+                    {% if pengaduan.foto %}
+                    <div class="detail-section">
+                        <h4 class="section-label-bold">Foto Bukti Kerusakan</h4>
+                        <div class="detail-photo-box">
+                            <img src="{{ pengaduan.foto.url }}" alt="Bukti Kerusakan" class="detail-photo-img">
+                        </div>
+                    </div>
+                    {% endif %}
+                </div>
+            </div>
+
+            <!-- Admin Response Card -->
+            <div class="card response-card {% if pengaduan.catatan_admin %}response-active{% endif %}" style="margin-top: 24px;">
+                <div class="response-header">
+                    <i data-lucide="message-square" class="response-icon"></i>
+                    <h3 class="response-title">Catatan Tindak Lanjut dari Admin</h3>
+                </div>
+                <div class="response-body">
+                    {% if pengaduan.catatan_admin %}
+                        <p class="response-text">{{ pengaduan.catatan_admin }}</p>
+                    {% else %}
+                        <p class="response-text text-muted">
+                            Belum ada catatan tindak lanjut dari tim admin. Laporan Anda saat ini sedang diperiksa dan diverifikasi oleh petugas kami.
+                        </p>
+                    {% endif %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Right: Status Timeline Progress -->
+        <div class="detail-sidebar-col">
+            <div class="card timeline-card">
+                <h3 class="timeline-card-title">Timeline Penanganan</h3>
+                
+                <div class="vertical-timeline">
+                    {% for step in timeline %}
+                        <div class="timeline-step {% if step.status %}step-completed{% else %}step-pending{% endif %}">
+                            <div class="step-bullet-wrapper">
+                                <div class="step-bullet">
+                                    {% if step.status %}
+                                        <i data-lucide="check" class="bullet-icon-check"></i>
+                                    {% else %}
+                                        <span class="bullet-dot"></span>
+                                    {% endif %}
+                                </div>
+                                {% if not forloop.last %}
+                                    <div class="step-connector"></div>
+                                {% endif %}
+                            </div>
+                            <div class="step-content">
+                                <h4 class="step-title-text">{{ step.title }}</h4>
+                                <p class="step-desc-text">{{ step.desc }}</p>
+                                {% if step.status and step.date %}
+                                    <span class="step-date-text">{{ step.date|date:"d M Y, H:i" }} WIB</span>
+                                {% endif %}
+                            </div>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}

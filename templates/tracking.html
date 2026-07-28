@@ -1,0 +1,250 @@
+{% extends 'base.html' %}
+{% load static %}
+
+{% block title %}Tracking Pengaduan - Portal SPID{% endblock %}
+
+{% block content %}
+<div class="tracking-container">
+
+    <!-- Header info -->
+    <div class="page-header-info">
+        <h2 class="page-title-main">Tracking Pengaduan</h2>
+        <p class="page-subtitle-main">Pantau perkembangan status penanganan laporan pengaduan infrastruktur Anda secara real-time.</p>
+    </div>
+
+    <!-- Table Card -->
+    <div class="tracking-card card">
+        {% if not pengaduans %}
+            <!-- Empty State -->
+            <div class="empty-state">
+                <div class="empty-icon-container">
+                    <i data-lucide="folder-open" class="empty-icon"></i>
+                </div>
+                <h3 class="empty-title">Belum Ada Laporan Pengaduan</h3>
+                <p class="empty-desc">Anda belum mengirimkan laporan pengaduan infrastruktur daerah. Silakan buat laporan baru jika menemukan kerusakan.</p>
+                <a href="{% url 'form_pengaduan' %}" class="btn btn-primary">
+                    <i data-lucide="plus" class="btn-icon-left"></i>
+                    <span>Buat Pengaduan Sekarang</span>
+                </a>
+            </div>
+        {% else %}
+            <!-- Responsive Table -->
+            <div class="table-responsive">
+                <table class="tracking-table">
+                    <thead>
+                        <tr>
+                            <th>ID Laporan</th>
+                            <th>Tanggal</th>
+                            <th>Kategori</th>
+                            <th>Lokasi Kejadian</th>
+                            <th>Status</th>
+                            <th>Aksi</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        {% for p in pengaduans %}
+                            <tr>
+                                <td class="font-bold text-dark">#SPID-{{ p.id }}</td>
+                                <td>{{ p.created_at|date:"d M Y, H:i" }} WIB</td>
+                                <td>
+                                    <span class="category-pill text-category-{{ p.kategori }}">
+                                        {% if p.kategori == 'Jalan' %}<i data-lucide="road" class="pill-icon"></i>
+                                        {% elif p.kategori == 'Jembatan' %}<i data-lucide="bridge" class="pill-icon"></i>
+                                        {% elif p.kategori == 'Penerangan' %}<i data-lucide="lightbulb" class="pill-icon"></i>
+                                        {% elif p.kategori == 'Fasilitas' %}<i data-lucide="building-2" class="pill-icon"></i>
+                                        {% elif p.kategori == 'Irigasi' %}<i data-lucide="droplet" class="pill-icon"></i>
+                                        {% else %}<i data-lucide="help-circle" class="pill-icon"></i>
+                                        {% endif %}
+                                        {{ p.get_kategori_display }}
+                                    </span>
+                                </td>
+                                <td class="truncate-cell" title="{{ p.lokasi }}">{{ p.lokasi }}</td>
+                                <td>
+                                    <span class="status-badge badge-{{ p.status|lower }}">
+                                        {{ p.status }}
+                                    </span>
+                                </td>
+                                <td>
+                                    <div style="display: flex; gap: 6px;">
+                                        <a href="{% url 'user_detail' p.id %}" class="btn btn-small btn-secondary" style="padding: 6px 10px; display: inline-flex; align-items: center; gap: 4px; border: 1px solid var(--border-color); text-decoration: none; border-radius: 6px; font-size: 0.8rem;">
+                                            <i data-lucide="external-link" class="btn-small-icon"></i>
+                                            <span>Detail</span>
+                                        </a>
+                                    </div>
+                                </td>
+                            </tr>
+                        {% endfor %}
+                    </tbody>
+                </table>
+            </div>
+        {% endif %}
+    </div>
+
+</div>
+
+<!-- Interactive Modal for Complaint Detail -->
+<div class="modal-backdrop hide" id="detailModal">
+    <div class="modal-card">
+        <div class="modal-header">
+            <h3 class="modal-title" id="modal-report-id">Detail Laporan #SPID-0000</h3>
+            <button class="modal-close-btn" onclick="closeDetailModal()">&times;</button>
+        </div>
+        <div class="modal-body" id="modal-body-content">
+            
+            <div class="modal-grid">
+                <!-- Left column: Details & Notes -->
+                <div class="modal-details-col">
+                    <div class="modal-section">
+                        <span class="modal-section-label">Kategori</span>
+                        <div class="modal-section-value" id="modal-kategori">Kerusakan Jalan</div>
+                    </div>
+                    
+                    <div class="modal-section">
+                        <span class="modal-section-label">Tanggal Pelaporan</span>
+                        <div class="modal-section-value" id="modal-tanggal">10 Juni 2026, 11:43 WIB</div>
+                    </div>
+
+                    <div class="modal-section">
+                        <span class="modal-section-label">Lokasi Kejadian</span>
+                        <div class="modal-section-value bg-light" id="modal-lokasi">Jl. Merdeka No. 45, Kecamatan Sukamaju</div>
+                    </div>
+
+                    <div class="modal-section">
+                        <span class="modal-section-label">Deskripsi Laporan</span>
+                        <div class="modal-section-value bg-light text-pre" id="modal-deskripsi">Lubang jalan cukup besar berdiameter 1 meter...</div>
+                    </div>
+
+                    <div class="modal-section">
+                        <span class="modal-section-label">Status Penanganan</span>
+                        <div class="modal-status-row">
+                            <span class="status-badge" id="modal-status-badge">Pending</span>
+                            <span class="modal-updated-date" id="modal-updated-time">Diupdate: 10 Juni 2026</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Right column: Documentation Photo & Admin Response -->
+                <div class="modal-media-col">
+                    <div class="modal-section">
+                        <span class="modal-section-label">Foto Dokumentasi</span>
+                        <div class="modal-image-container">
+                            <img src="" alt="Bukti Kerusakan" id="modal-photo" class="modal-img-preview">
+                            <div class="no-photo-placeholder hide" id="modal-no-photo">
+                                <i data-lucide="image-off" class="placeholder-icon"></i>
+                                <span>Tidak ada foto dilampirkan</span>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Admin Response / Action Box -->
+            <div class="admin-response-section" id="modal-admin-response-container">
+                <h4 class="admin-response-title">
+                    <i data-lucide="message-square" class="response-title-icon"></i>
+                    <span>Tindak Lanjut Admin</span>
+                </h4>
+                <div class="admin-response-content" id="modal-admin-note">
+                    Belum ada tindakan lanjut atau catatan tambahan dari admin. Laporan Anda sedang dalam proses peninjauan awal.
+                </div>
+            </div>
+
+        </div>
+        <div class="modal-footer">
+            <button class="btn btn-secondary" onclick="closeDetailModal()">Tutup</button>
+        </div>
+    </div>
+</div>
+
+<!-- Raw data for javascript modal lookup -->
+<script id="reports-data" type="application/json">
+[
+    {% for p in pengaduans %}
+    {
+        "id": {{ p.id }},
+        "kategori": "{{ p.get_kategori_display }}",
+        "kategori_raw": "{{ p.kategori }}",
+        "tanggal": "{{ p.created_at|date:"d F Y, H:i" }} WIB",
+        "updated": "{{ p.updated_at|date:"d F Y, H:i" }} WIB",
+        "lokasi": {{ p.lokasi|json_script:"tmp"|slice:"34:-9" }},
+        "deskripsi": {{ p.deskripsi|json_script:"tmp"|slice:"34:-9" }},
+        "status": "{{ p.status }}",
+        "status_lower": "{{ p.status|lower }}",
+        "foto_url": "{% if p.foto %}{{ p.foto.url }}{% endif %}",
+        "catatan_admin": {% if p.catatan_admin %}{{ p.catatan_admin|json_script:"tmp"|slice:"34:-9" }}{% else %}null{% endif %}
+    }{% if not forloop.last %},{% endif %}
+    {% endfor %}
+]
+</script>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    let reports = [];
+    try {
+        reports = JSON.parse(document.getElementById('reports-data').textContent);
+    } catch (e) {
+        console.error("Failed to parse reports data", e);
+    }
+
+    const modal = document.getElementById('detailModal');
+
+    function openDetailModal(id) {
+        const report = reports.find(r => r.id === id);
+        if (!report) return;
+
+        document.getElementById('modal-report-id').textContent = `Detail Laporan #SPID-${report.id}`;
+        document.getElementById('modal-kategori').textContent = report.kategori;
+        document.getElementById('modal-tanggal').textContent = report.tanggal;
+        document.getElementById('modal-lokasi').textContent = report.lokasi;
+        document.getElementById('modal-deskripsi').textContent = report.deskripsi;
+        
+        // Update status badge
+        const badge = document.getElementById('modal-status-badge');
+        badge.textContent = report.status;
+        badge.className = `status-badge badge-${report.status_lower}`;
+        
+        document.getElementById('modal-updated-time').textContent = `Diperbarui: ${report.updated}`;
+
+        // Photo loading
+        const img = document.getElementById('modal-photo');
+        const noPhoto = document.getElementById('modal-no-photo');
+        if (report.foto_url) {
+            img.src = report.foto_url;
+            img.classList.remove('hide');
+            noPhoto.classList.add('hide');
+        } else {
+            img.src = '';
+            img.classList.add('hide');
+            noPhoto.classList.remove('hide');
+        }
+
+        // Admin notes
+        const responseBox = document.getElementById('modal-admin-response-container');
+        const adminNote = document.getElementById('modal-admin-note');
+        if (report.catatan_admin) {
+            adminNote.textContent = report.catatan_admin;
+            responseBox.classList.add('response-active');
+        } else {
+            adminNote.textContent = "Belum ada tindakan lanjut atau catatan tambahan dari admin. Laporan Anda sedang dalam proses peninjauan awal.";
+            responseBox.classList.remove('response-active');
+        }
+
+        modal.classList.remove('hide');
+        document.body.style.overflow = 'hidden'; // prevent back scroll
+        lucide.createIcons();
+    }
+
+    function closeDetailModal() {
+        modal.classList.add('hide');
+        document.body.style.overflow = '';
+    }
+
+    // Close on click outside modal card
+    modal.addEventListener('click', (e) => {
+        if (e.target === modal) {
+            closeDetailModal();
+        }
+    });
+</script>
+{% endblock %}

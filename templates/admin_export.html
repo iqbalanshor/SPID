@@ -1,0 +1,176 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Export Laporan - Admin SPID{% endblock %}
+
+{% block content %}
+<div class="admin-export-container" style="display: flex; flex-direction: column; gap: 30px;">
+
+    <!-- Header Page -->
+    <div>
+        <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--primary-color);">Export Laporan Berkala</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">Saring data pengaduan masyarakat berdasarkan tanggal, kategori, dan status untuk diunduh atau dicetak.</p>
+    </div>
+
+    <!-- Filter Card & Stats Grid -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 30px;">
+        
+        <!-- Filter Card -->
+        <div class="card" style="padding: 28px;">
+            <h3 style="font-size: 1.15rem; font-weight: 700; margin-bottom: 20px; display: flex; align-items: center; gap: 8px;">
+                <i data-lucide="filter" style="color: var(--primary-light); width: 20px; height: 20px;"></i>
+                <span>Filter Pengaduan</span>
+            </h3>
+            
+            <form method="GET" action="{% url 'admin_export' %}" class="app-form" style="display: flex; flex-direction: column; gap: 20px;">
+                <!-- Date Range Row -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Mulai</label>
+                        <input type="date" name="start_date" class="form-control-input" value="{{ start_date }}" style="padding: 10px 14px; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Tanggal Selesai</label>
+                        <input type="date" name="end_date" class="form-control-input" value="{{ end_date }}" style="padding: 10px 14px; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <!-- Kategori Selection -->
+                <div class="form-group">
+                    <label class="form-label">Kategori Infrastruktur</label>
+                    <p class="field-help-text">Pilih satu atau beberapa kategori (Tahan CTRL untuk memilih lebih dari satu).</p>
+                    <select name="kategori" class="form-control-input" multiple style="height: 110px; padding: 8px; border-radius: 8px;">
+                        <option value="Semua" {% if 'Semua' in kategori_filter or not kategori_filter %}selected{% endif %}>Semua Kategori</option>
+                        <option value="Jalan" {% if 'Jalan' in kategori_filter %}selected{% endif %}>Kerusakan Jalan</option>
+                        <option value="Jembatan" {% if 'Jembatan' in kategori_filter %}selected{% endif %}>Kerusakan Jembatan</option>
+                        <option value="Penerangan" {% if 'Penerangan' in kategori_filter %}selected{% endif %}>Lampu Penerangan Jalan</option>
+                        <option value="Fasilitas" {% if 'Fasilitas' in kategori_filter %}selected{% endif %}>Fasilitas Umum Lainnya</option>
+                        <option value="Irigasi" {% if 'Irigasi' in kategori_filter %}selected{% endif %}>Saluran Air / Irigasi</option>
+                        <option value="Lainnya" {% if 'Lainnya' in kategori_filter %}selected{% endif %}>Lain-lain</option>
+                    </select>
+                </div>
+
+                <!-- Status Checkboxes -->
+                <div class="form-group">
+                    <label class="form-label">Status Penanganan</label>
+                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 6px;">
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" name="status" value="Pending" class="form-check-input" style="margin-top: 0;" {% if 'Pending' in status_filter or not status_filter %}checked{% endif %}>
+                            <span>Pending</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" name="status" value="Diverifikasi" class="form-check-input" style="margin-top: 0;" {% if 'Diverifikasi' in status_filter or not status_filter %}checked{% endif %}>
+                            <span>Diverifikasi</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" name="status" value="Diproses" class="form-check-input" style="margin-top: 0;" {% if 'Diproses' in status_filter or not status_filter %}checked{% endif %}>
+                            <span>Diproses</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" name="status" value="Selesai" class="form-check-input" style="margin-top: 0;" {% if 'Selesai' in status_filter or not status_filter %}checked{% endif %}>
+                            <span>Selesai</span>
+                        </label>
+                        <label style="display: flex; align-items: center; gap: 8px; font-size: 0.88rem; cursor: pointer; font-weight: 500;">
+                            <input type="checkbox" name="status" value="Ditolak" class="form-check-input" style="margin-top: 0;" {% if 'Ditolak' in status_filter or not status_filter %}checked{% endif %}>
+                            <span>Ditolak</span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Submit Button -->
+                <div style="margin-top: 10px;">
+                    <button type="submit" class="btn btn-primary" style="width: 100%; padding: 12px; font-weight: 600; display: flex; justify-content: center; gap: 8px;">
+                        <i data-lucide="refresh-cw" style="width: 18px; height: 18px;"></i>
+                        <span>Terapkan Filter Saringan</span>
+                    </button>
+                </div>
+            </form>
+        </div>
+
+        <!-- Summary Statistics Card -->
+        <div style="display: flex; flex-direction: column; gap: 20px;">
+            <!-- Stats Widget: Total Sesuai Saringan -->
+            <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Cocok dengan Filter</span>
+                <span style="font-size: 2.5rem; font-weight: 800; font-family: var(--font-outfit); color: var(--primary-color);">{{ total_count }}</span>
+                <p style="font-size: 0.8rem; color: var(--text-muted); line-height: 1.4; margin-top: 4px;">Jumlah laporan pengaduan yang masuk dalam kriteria filter saat ini.</p>
+            </div>
+            
+            <!-- Stats Widget: Penyelesaian -->
+            <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 8px;">
+                <span style="font-size: 0.8rem; font-weight: 700; color: var(--text-muted); text-transform: uppercase; letter-spacing: 0.5px;">Rasio Penyelesaian</span>
+                <div style="display: flex; align-items: baseline; gap: 8px;">
+                    <span style="font-size: 2.5rem; font-weight: 800; font-family: var(--font-outfit); color: #10b981;">{{ ratio }}%</span>
+                    <span style="font-size: 0.9rem; font-weight: 600; color: var(--text-muted);">({{ completed_count }} selesai)</span>
+                </div>
+                <div style="width: 100%; height: 6px; background-color: #e2e8f0; border-radius: 4px; overflow: hidden; margin-top: 8px;">
+                    <div style="width: {{ ratio }}%; height: 100%; background-color: #10b981; border-radius: 4px;"></div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Export Action Row & Preview Table -->
+    <div class="card" style="padding: 0; overflow: hidden;">
+        <div style="padding: 24px 28px; border-bottom: 1px solid var(--border-color); display: flex; justify-content: space-between; align-items: center; background-color: #fcfcfc;">
+            <h3 style="font-size: 1.15rem; font-weight: 700;">Pratinjau Data Saringan (Maks. 5 Teratas)</h3>
+            <div style="display: flex; gap: 12px;">
+                <!-- Print Report Link -->
+                <a href="{% url 'admin_export' %}?export=print&start_date={{ start_date }}&end_date={{ end_date }}{% for kat in kategori_filter %}&kategori={{ kat }}{% endfor %}{% for st in status_filter %}&status={{ st }}{% endfor %}" target="_blank" class="btn btn-primary" style="padding: 10px 20px; background-color: #000; border-color: #000; display: flex; align-items: center; gap: 8px; text-decoration: none; color: #fff;">
+                    <i data-lucide="printer" style="width: 18px; height: 18px;"></i>
+                    <span>Cetak Laporan / PDF</span>
+                </a>
+            </div>
+        </div>
+
+        <div class="table-responsive">
+            <table class="tracking-table">
+                <thead>
+                    <tr>
+                        <th>ID Laporan</th>
+                        <th>Kategori</th>
+                        <th>Pelapor</th>
+                        <th>Lokasi Detail</th>
+                        <th>Tanggal Laporan</th>
+                        <th>Status</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for r in reports %}
+                    <tr>
+                        <td class="font-bold" style="color: var(--text-dark);">#SPID-{{ r.id }}</td>
+                        <td style="font-weight: 700;">{{ r.get_kategori_display }}</td>
+                        <td>
+                            <div style="display: flex; flex-direction: column; gap: 2px;">
+                                <span style="font-weight: 600; color: var(--text-dark);">{{ r.user.nama_lengkap }}</span>
+                                <span style="font-size: 0.75rem; color: var(--text-muted);">{{ r.user.nomor_hp }}</span>
+                            </div>
+                        </td>
+                        <td style="font-weight: 500; color: var(--text-muted);">{{ r.lokasi }}</td>
+                        <td style="color: var(--text-muted);">{{ r.created_at|date:"d M Y" }}</td>
+                        <td>
+                            {% if r.status == 'Pending' %}
+                                <span style="font-size: 0.8rem; color: #991b1b; background-color: #fef2f2; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Pending</span>
+                            {% elif r.status == 'Diverifikasi' %}
+                                <span style="font-size: 0.8rem; color: #1e40af; background-color: #eff6ff; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Diverifikasi</span>
+                            {% elif r.status == 'Diproses' %}
+                                <span style="font-size: 0.8rem; color: #92400e; background-color: #fffbeb; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Diproses</span>
+                            {% elif r.status == 'Selesai' %}
+                                <span style="font-size: 0.8rem; color: #065f46; background-color: #ecfdf5; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Selesai</span>
+                            {% else %}
+                                <span style="font-size: 0.8rem; color: #374151; background-color: #f3f4f6; padding: 4px 12px; border-radius: 20px; font-weight: 700;">Ditolak</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% empty %}
+                    <tr>
+                        <td colspan="6" style="text-align: center; padding: 40px; color: var(--text-muted);">Tidak ada data pengaduan yang cocok dengan filter saringan Anda.</td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+    </div>
+
+</div>
+{% endblock %}

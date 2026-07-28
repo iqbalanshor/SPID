@@ -1,0 +1,321 @@
+{% extends 'admin_base.html' %}
+{% load static %}
+
+{% block title %}Update Status #SPID-{{ report.id }} - Admin{% endblock %}
+
+{% block content %}
+<div class="admin-update-container" style="display: flex; flex-direction: column; gap: 24px;">
+
+    <!-- Back button -->
+    <div style="font-size: 0.9rem; font-weight: 600;">
+        <a href="{% url 'admin_detail' report.pk %}" style="display: inline-flex; align-items: center; gap: 8px; color: var(--text-dark);">
+            <i data-lucide="arrow-left" style="width: 18px; height: 18px;"></i>
+            <span>Kembali ke Detail Laporan</span>
+        </a>
+    </div>
+
+    <!-- Page Title -->
+    <div>
+        <h2 style="font-size: 1.8rem; font-weight: 700; color: var(--primary-color);">Update Status #REP-2026-{{ report.id|stringformat:"04d" }}</h2>
+        <p style="color: var(--text-muted); font-size: 0.95rem; margin-top: 4px;">Update progress perbaikan dan tindak lanjut laporan infrastruktur daerah.</p>
+    </div>
+
+    <!-- Main Grid -->
+    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 28px;">
+        
+        <!-- Left: Form Card -->
+        <div class="card" style="padding: 28px;">
+            <h3 style="font-size: 1.15rem; font-weight: 750; margin-bottom: 24px; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">Formulir Tindak Lanjut</h3>
+            
+            <form method="POST" enctype="multipart/form-data" class="app-form">
+                {% csrf_token %}
+
+                <!-- Status Saat Ini (Custom Large Radio Buttons group) -->
+                <div class="form-group">
+                    <label class="form-label">Status Saat Ini</label>
+                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 8px;">
+                        
+                        <!-- Menunggu / Pending -->
+                        <label class="status-radio-label">
+                            <input type="radio" name="status" value="Pending" {% if report.status == 'Pending' %}checked{% endif %} class="hide-radio">
+                            <div class="status-radio-card card-status-pending">
+                                <i data-lucide="clock" class="status-radio-icon"></i>
+                                <span>Menunggu</span>
+                            </div>
+                        </label>
+
+                        <!-- Diverifikasi -->
+                        <label class="status-radio-label">
+                            <input type="radio" name="status" value="Diverifikasi" {% if report.status == 'Diverifikasi' %}checked{% endif %} class="hide-radio">
+                            <div class="status-radio-card card-status-verified">
+                                <i data-lucide="shield" class="status-radio-icon"></i>
+                                <span>Diverifikasi</span>
+                            </div>
+                        </label>
+
+                        <!-- Diproses -->
+                        <label class="status-radio-label">
+                            <input type="radio" name="status" value="Diproses" {% if report.status == 'Diproses' %}checked{% endif %} class="hide-radio">
+                            <div class="status-radio-card card-status-processed">
+                                <i data-lucide="refresh-cw" class="status-radio-icon"></i>
+                                <span>Diproses</span>
+                            </div>
+                        </label>
+
+                        <!-- Selesai -->
+                        <label class="status-radio-label">
+                            <input type="radio" name="status" value="Selesai" {% if report.status == 'Selesai' %}checked{% endif %} class="hide-radio">
+                            <div class="status-radio-card card-status-done">
+                                <i data-lucide="check-circle2" class="status-radio-icon"></i>
+                                <span>Selesai</span>
+                            </div>
+                        </label>
+
+                    </div>
+                </div>
+
+                <!-- Estimasi Selesai & Prioritas (2 columns) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <!-- Date Picker -->
+                    <div class="form-group">
+                        <label for="id_estimasi_selesai" class="form-label">Estimasi Selesai</label>
+                        <div class="input-with-icon">
+                            <i data-lucide="calendar" class="input-icon-left" style="width: 16px; height: 16px;"></i>
+                            <input type="date" name="estimasi_selesai" id="id_estimasi_selesai" 
+                                   value="{% if report.estimasi_selesai %}{{ report.estimasi_selesai|date:'Y-m-d' }}{% endif %}" 
+                                   class="form-control-input" style="padding: 10px 12px 10px 40px; border-radius: 8px;">
+                        </div>
+                    </div>
+
+                    <!-- Prioritas Selector -->
+                    <div class="form-group">
+                        <label for="id_prioritas" class="form-label">Prioritas Pengerjaan</label>
+                        <div class="select-wrapper">
+                            <select name="prioritas" id="id_prioritas" class="form-control-input select-input" style="padding: 10px 16px; border-radius: 8px;">
+                                <option value="Rendah" {% if report.prioritas == 'Rendah' %}selected{% endif %}>Rendah</option>
+                                <option value="Normal" {% if report.prioritas == 'Normal' %}selected{% endif %}>Normal</option>
+                                <option value="Tinggi" {% if report.prioritas == 'Tinggi' %}selected{% endif %}>Tinggi</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Petugas Lapangan & Aset ID (2 columns) -->
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+                    <div class="form-group">
+                        <label for="id_petugas" class="form-label">Petugas Lapangan</label>
+                        <input type="text" name="petugas" id="id_petugas" value="{{ report.petugas }}" class="form-control-input" style="padding: 10px 16px; border-radius: 8px;">
+                    </div>
+                    <div class="form-group">
+                        <label for="id_aset_id" class="form-label">Aset ID</label>
+                        <input type="text" name="aset_id" id="id_aset_id" value="{{ report.aset_id }}" class="form-control-input" style="padding: 10px 16px; border-radius: 8px;">
+                    </div>
+                </div>
+
+                <!-- Catatan Tindak Lanjut -->
+                <div class="form-group">
+                    <label for="id_catatan_admin" class="form-label">Catatan Tindak Lanjut / Catatan Admin</label>
+                    <textarea name="catatan_admin" id="id_catatan_admin" rows="4" class="textarea-input" placeholder="Jelaskan tindakan perbaikan lapangan atau progres terbaru...">{{ report.catatan_admin|default:'' }}</textarea>
+                </div>
+
+                <!-- Unggah Foto Progress -->
+                <div class="form-group">
+                    <label class="form-label">Unggah Foto Progress / Perbaikan (Maks 1)</label>
+                    
+                    <div style="display: flex; gap: 16px; align-items: center; margin-top: 6px;">
+                        <!-- Upload Slot 1 -->
+                        <div style="width: 100px; height: 100px; border: 2px dashed var(--border-color); border-radius: 8px; display: flex; flex-direction: column; align-items: center; justify-content: center; cursor: pointer; color: var(--text-light);" onclick="document.getElementById('id_foto_progress').click()">
+                            <i data-lucide="plus-circle" style="width: 24px; height: 24px;"></i>
+                            <span style="font-size: 0.65rem; font-weight: 600; margin-top: 4px; text-transform: uppercase;">Tambah Foto</span>
+                            <input type="file" name="foto_progress" id="id_foto_progress" accept="image/*" class="hide" onchange="previewProgressImage(this)">
+                        </div>
+
+                        <!-- Preview slot -->
+                        <div id="progress-preview-box" style="width: 100px; height: 100px; border-radius: 8px; border: 1px solid var(--border-color); overflow: hidden; display: none; position: relative;">
+                            <img src="" alt="Progress Preview" id="progress-img" style="width: 100%; height: 100%; object-fit: cover;">
+                            <button type="button" onclick="removeProgressImage()" style="position: absolute; top: 4px; right: 4px; background: rgba(0,0,0,0.6); color: #fff; border: none; border-radius: 50%; width: 18px; height: 18px; display: flex; align-items: center; justify-content: center; cursor: pointer; font-size: 10px;">&times;</button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Actions Buttons -->
+                <div class="form-actions-row" style="margin-top: 12px; padding-top: 20px;">
+                    <button type="submit" class="btn btn-primary" style="background-color: #000; padding: 12px 28px;">
+                        <span>Simpan Perubahan</span>
+                    </button>
+                    <a href="{% url 'admin_detail' report.pk %}" class="btn btn-secondary" style="padding: 12px 28px;">Batal</a>
+                </div>
+
+            </form>
+        </div>
+
+        <!-- Right Side: Details Summary & history -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+            
+            <!-- Ringkasan Laporan Card -->
+            <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 16px; background-color: var(--bg-light);">
+                <h3 style="font-size: 1.1rem; font-weight: 750; border-bottom: 1px solid var(--border-color); padding-bottom: 12px; color: var(--primary-color);">Ringkasan Laporan</h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 12px; font-size: 0.85rem;">
+                    <div>
+                        <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem;">ID Laporan</span>
+                        <div style="font-weight: 700; color: var(--text-dark); font-size: 0.95rem; margin-top: 2px;">#REP-2026-{{ report.id|stringformat:"04d" }}</div>
+                    </div>
+                    <div>
+                        <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem;">Kategori</span>
+                        <div style="font-weight: 600; color: var(--text-dark); margin-top: 2px;">{{ report.get_kategori_display }}</div>
+                    </div>
+                    <div>
+                        <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem;">Lokasi</span>
+                        <div style="color: var(--text-dark); margin-top: 2px;">{{ report.lokasi }}</div>
+                    </div>
+                    <div>
+                        <span style="font-weight: 700; color: var(--text-muted); text-transform: uppercase; font-size: 0.7rem;">Deskripsi Asli</span>
+                        <div style="color: var(--text-muted); margin-top: 2px; line-height: 1.5; font-style: italic;">"{{ report.deskripsi }}"</div>
+                    </div>
+                </div>
+
+                <!-- Priority badge box -->
+                <div style="background-color: var(--primary-dark); color: #fff; padding: 12px; border-radius: 8px; margin-top: 10px; display: flex; align-items: center; justify-content: space-between;">
+                    <div style="display: flex; flex-direction: column; gap: 2px;">
+                        <span style="font-size: 0.65rem; color: rgba(255,255,255,0.6); text-transform: uppercase; font-weight: 700;">Indeks Urgensi</span>
+                        <span style="font-size: 0.85rem; font-weight: 700;">{{ report.urgensi }}</span>
+                    </div>
+                    <i data-lucide="shield-alert" style="color: var(--accent-gold); width: 22px; height: 22px;"></i>
+                </div>
+            </div>
+
+            <!-- Riwayat Perubahan -->
+            <div class="card" style="padding: 24px; display: flex; flex-direction: column; gap: 16px;">
+                <h3 style="font-size: 1.1rem; font-weight: 750; border-bottom: 1px solid var(--border-color); padding-bottom: 12px;">Riwayat Perubahan</h3>
+                
+                <div style="display: flex; flex-direction: column; gap: 18px; padding-left: 16px; position: relative;">
+                    <!-- timeline line -->
+                    <div style="position: absolute; top: 4px; bottom: 4px; left: 4px; width: 1.5px; background-color: var(--border-color);"></div>
+
+                    <!-- Item 1: Current status -->
+                    <div style="position: relative; font-size: 0.8rem;">
+                        <div style="position: absolute; left: -16px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background-color: var(--primary-light);"></div>
+                        <div style="font-weight: 700; color: var(--text-dark);">Status: {{ report.status }}</div>
+                        <div style="color: var(--text-muted); font-size: 0.72rem; margin-top: 1px;">Diupdate: {{ report.updated_at|date:"d M Y, H:i" }} WIB</div>
+                    </div>
+
+                    <!-- Item 2: Created -->
+                    <div style="position: relative; font-size: 0.8rem;">
+                        <div style="position: absolute; left: -16px; top: 4px; width: 8px; height: 8px; border-radius: 50%; background-color: var(--text-light);"></div>
+                        <div style="font-weight: 700; color: var(--text-dark);">Laporan Diterima</div>
+                        <div style="color: var(--text-muted); font-size: 0.72rem; margin-top: 1px;">{{ report.created_at|date:"d M Y, H:i" }} WIB</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- Custom override styling for radio cards -->
+<style>
+    /* Hide native radio */
+    .hide-radio {
+        position: absolute;
+        opacity: 0;
+        width: 0;
+        height: 0;
+    }
+    
+    .status-radio-label {
+        cursor: pointer;
+        width: 100%;
+    }
+
+    .status-radio-card {
+        border: 1.5px solid var(--border-color);
+        background-color: #fff;
+        border-radius: 10px;
+        padding: 16px 12px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        gap: 8px;
+        font-family: var(--font-outfit);
+        font-size: 0.85rem;
+        font-weight: 700;
+        color: var(--text-muted);
+        text-align: center;
+        transition: var(--transition);
+        height: 84px;
+        box-shadow: var(--shadow-sm);
+    }
+
+    .status-radio-icon {
+        width: 20px;
+        height: 20px;
+        color: var(--text-light);
+        transition: var(--transition);
+    }
+
+    /* Active States */
+    .status-radio-label input:checked + .card-status-pending {
+        border-color: var(--text-light);
+        background-color: var(--bg-light);
+        color: var(--text-dark);
+    }
+    .status-radio-label input:checked + .card-status-pending .status-radio-icon {
+        color: var(--text-dark);
+    }
+
+    .status-radio-label input:checked + .card-status-verified {
+        border-color: #bfdbfe;
+        background-color: #eff6ff;
+        color: #1d4ed8;
+    }
+    .status-radio-label input:checked + .card-status-verified .status-radio-icon {
+        color: #1d4ed8;
+    }
+
+    .status-radio-label input:checked + .card-status-processed {
+        border-color: #fde68a;
+        background-color: #fffbeb;
+        color: #b45309;
+    }
+    .status-radio-label input:checked + .card-status-processed .status-radio-icon {
+        color: #b45309;
+    }
+
+    .status-radio-label input:checked + .card-status-done {
+        border-color: #a7f3d0;
+        background-color: #ecfdf5;
+        color: #047857;
+    }
+    .status-radio-label input:checked + .card-status-done .status-radio-icon {
+        color: #047857;
+    }
+</style>
+
+<script>
+    function previewProgressImage(input) {
+        const previewBox = document.getElementById('progress-preview-box');
+        const previewImg = document.getElementById('progress-img');
+        if (input.files && input.files[0]) {
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                previewImg.src = e.target.result;
+                previewBox.style.display = 'block';
+            }
+            reader.readAsDataURL(input.files[0]);
+        }
+    }
+
+    function removeProgressImage() {
+        const fileInput = document.getElementById('id_foto_progress');
+        const previewBox = document.getElementById('progress-preview-box');
+        const previewImg = document.getElementById('progress-img');
+        fileInput.value = '';
+        previewImg.src = '';
+        previewBox.style.display = 'none';
+    }
+</script>
+{% endblock %}
